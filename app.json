@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "RNCameraDemo",
+    "slug": "RNCameraDemo",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  },
+  "name": "RNCameraDemo"
+}
