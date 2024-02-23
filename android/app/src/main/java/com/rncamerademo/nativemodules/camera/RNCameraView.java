@@ -13,6 +13,7 @@ import android.media.CamcorderProfile;
 import android.os.Build;
 import androidx.core.content.ContextCompat;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -39,6 +40,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class RNCameraView extends CameraView implements LifecycleEventListener, BarCodeScannerAsyncTaskDelegate, FaceDetectorAsyncTaskDelegate,
     BarcodeDetectorAsyncTaskDelegate, TextRecognizerAsyncTaskDelegate, PictureSavedDelegate {
+  private static final String TAG = "rncameranativemodule";
   private ThemedReactContext mThemedReactContext;
   private Queue<Promise> mPictureTakenPromises = new ConcurrentLinkedQueue<>();
   private Map<Promise, ReadableMap> mPictureTakenOptions = new ConcurrentHashMap<>();
@@ -168,12 +170,12 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
         if (!willCallBarCodeTask && !willCallFaceTask && !willCallGoogleBarcodeTask && !willCallTextTask) {
           return;
         }
-
-        if (data.length < (1.5 * width * height)) {
-            return;
-        }
-
+        // this resolves to true. idk why this is here
+//        if (data.length < (1.5 * width * height)) {
+//            return;
+//        }
         if (willCallBarCodeTask) {
+          Log.d(TAG, "starting barcode task");
           barCodeScannerTaskLock = true;
           BarCodeScannerAsyncTaskDelegate delegate = (BarCodeScannerAsyncTaskDelegate) cameraView;
           new BarCodeScannerAsyncTask(delegate, mMultiFormatReader, data, width, height, mLimitScanArea, mScanAreaX, mScanAreaY, mScanAreaWidth, mScanAreaHeight, mCameraViewWidth, mCameraViewHeight, getAspectRatio().toFloat()).execute();
@@ -366,7 +368,10 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
 
   public void onBarCodeRead(Result barCode, int width, int height, byte[] imageData) {
     String barCodeType = barCode.getBarcodeFormat().toString();
-    if (!mShouldScanBarCodes || !mBarCodeTypes.contains(barCodeType)) {
+    if (!mShouldScanBarCodes) {
+      return;
+    }
+    if (mBarCodeTypes != null && !mBarCodeTypes.contains(barCodeType)) {
       return;
     }
 

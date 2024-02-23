@@ -32,6 +32,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.MeteringRectangle;
+import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.CamcorderProfile;
 import android.media.Image;
@@ -67,7 +68,7 @@ import java.util.SortedSet;
 @TargetApi(21)
 class Camera2 extends CameraViewImpl implements MediaRecorder.OnInfoListener, MediaRecorder.OnErrorListener {
 
-    private static final String TAG = "Camera2";
+    private static final String TAG = "rncameranativemodule";
 
     private static final SparseIntArray INTERNAL_FACINGS = new SparseIntArray();
 
@@ -969,6 +970,9 @@ class Camera2 extends CameraViewImpl implements MediaRecorder.OnInfoListener, Me
             }
             mCamera.createCaptureSession(Arrays.asList(surface, mStillImageReader.getSurface(),
                     mScanImageReader.getSurface()), mSessionCallback, null);
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+//                mCamera.createCaptureSession(new SessionConfiguration(SessionConfiguration.SESSION_REGULAR, Arrays.asList(surface, mStillImageReader.getSurface(), mScanImageReader.getSurface()), mSessionCallback, null));
+//            }
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to start capture session", e);
             mCallback.onMountError();

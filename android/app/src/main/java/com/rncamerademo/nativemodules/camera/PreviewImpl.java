@@ -71,7 +71,7 @@ abstract class PreviewImpl {
     void setBufferSize(int width, int height) {
     }
 
-    void setSize(int width, int height) {
+    void setDimensions(int width, int height) {
         mWidth = width;
         mHeight = height;
     }

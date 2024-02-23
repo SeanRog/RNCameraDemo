@@ -1,12 +1,13 @@
 import React from 'react';
-import {View} from 'react-native';
+import {View, useWindowDimensions} from 'react-native';
 import RNCamera from './src/RNCamera';
 
 export default function App() {
+	const {width: screenWidth, height: screenHeight} = useWindowDimensions();
   return (
     <View style={{width: '100%', height: '100%', backgroundColor: 'purple'}}>
       <RNCamera
-				style={{height: '100%', width: '100%'}}
+				style={{ height: '100%', width: '100%' }}
 				type={0}
 				camerId={'0'}
 				ratio={'4:3'}
@@ -14,28 +15,28 @@ export default function App() {
 				autoFocus={true}
 				zoom={0}
 				useNativeZoom={false}
-				barCodeScannerEnabled={true}
+				barCodeScannerEnabled={false}
+				googleVisionBarcodeDetectorEnabled={true}
 				faceDetectorEnabled={false}
 				faceDetectionMode={0}
+				barCodeTypes={['code39', 'code93', 'code128', 'qr']}
 				faceDetectionLandmarks={0}
 				faceDetectionClassifications={0}
 				trackingEnabled={true}
 				textRecognizerEnabled={false}
-				rectOfInterest={{
-					x: 0,
-					y: 0,
-					width: 0,
-					height: 0
-				}} cameraViewDimensions={{
-					width: 0,
-					height: 0
-				}} onBarCodeRead={function ({ nativeEvent }: { nativeEvent: any; }): void {
+				cameraViewDimensions={{
+					width: screenWidth,
+					height: screenHeight
+				}}
+				onBarCodeRead={function ({ nativeEvent }: { nativeEvent: any; }): void {
 					console.log('onBarcodeRead:: ', nativeEvent);
-				}} onFacesDetected={function ({ nativeEvent }: { nativeEvent: any; }): void {
+				}}
+				onFacesDetected={function ({ nativeEvent }: { nativeEvent: any; }): void {
 					console.log('onFacesDetected:: ', nativeEvent);
-				}} onTextRecognized={function ({ nativeEvent }: { nativeEvent: any; }): void {
+				}}
+				onTextRecognized={function ({ nativeEvent }: { nativeEvent: any; }): void {
 					console.log('onTextRecognized:: ', nativeEvent);
-			}} />
+				}} />
     </View>
   );
 }

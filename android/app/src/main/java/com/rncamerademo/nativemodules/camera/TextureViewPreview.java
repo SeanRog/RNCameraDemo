@@ -41,21 +41,21 @@ class TextureViewPreview extends PreviewImpl {
 
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                setSize(width, height);
+                setDimensions(width, height);
                 configureTransform();
                 dispatchSurfaceChanged();
             }
 
             @Override
             public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-                setSize(width, height);
+                setDimensions(width, height);
                 configureTransform();
                 dispatchSurfaceChanged();
             }
 
             @Override
             public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                setSize(0, 0);
+                setDimensions(0, 0);
                 dispatchSurfaceDestroyed();
                 return true;
             }

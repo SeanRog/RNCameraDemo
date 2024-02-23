@@ -33,7 +33,7 @@ import java.util.SortedSet;
 
 
 public class CameraModule extends ReactContextBaseJavaModule {
-  private static final String TAG = "CameraModule";
+  private static final String TAG = "rncameranativemodule";
 
   private ScopedContext mScopedContext;
   static final int VIDEO_2160P = 0;

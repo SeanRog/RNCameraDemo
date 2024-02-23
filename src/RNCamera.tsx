@@ -153,6 +153,25 @@ type BarcodeType =
   | 'PRODUCT'
   | 'URL';
 
+type BarcodeFormats = 
+	| 'aztec'
+  | 'ean13'
+	| 'ean8'
+	| 'qr'
+	| 'pdf417'
+	| 'upc_e'
+	| 'datamatrix'
+	| 'code39'
+	| 'code93'
+	| 'interleaved2of5'
+	| 'codabar'
+	| 'code128'
+	| 'maxicode'
+	| 'rss14'
+	| 'rssexpanded'
+	| 'upc_a'
+	| 'upc_ean'
+
 type Email = {
   address?: string,
   body?: string,
@@ -196,14 +215,16 @@ type CameraViewProps = ViewProps & {
   zoom: number,
   useNativeZoom: boolean,
   barCodeScannerEnabled: boolean,
+	googleVisionBarcodeDetectorEnabled: boolean,
   faceDetectorEnabled: boolean,
   faceDetectionMode: number,
   faceDetectionLandmarks: number,
   faceDetectionClassifications: number,
   trackingEnabled: boolean,
   textRecognizerEnabled: boolean,
-  rectOfInterest: Rect,
+  rectOfInterest?: Rect, // limits scanning area
   cameraViewDimensions: CameraViewDimensions,
+	barCodeTypes?: BarcodeFormats[],
   onBarCodeRead: ({ nativeEvent }: EventCallbackArgumentsType) => void,
   onFacesDetected: ({ nativeEvent }: EventCallbackArgumentsType) => void,
   onTextRecognized: ({ nativeEvent }: EventCallbackArgumentsType) => void,

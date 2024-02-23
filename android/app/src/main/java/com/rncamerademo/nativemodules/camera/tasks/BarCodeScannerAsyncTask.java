@@ -1,5 +1,8 @@
 package com.rncamerademo.nativemodules.camera.tasks;
 
+import android.annotation.TargetApi;
+import android.util.Log;
+
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.MultiFormatReader;
 import com.google.zxing.NotFoundException;
@@ -7,7 +10,10 @@ import com.google.zxing.PlanarYUVLuminanceSource;
 import com.google.zxing.Result;
 import com.google.zxing.common.HybridBinarizer;
 
+import java.util.Base64;
+
 public class BarCodeScannerAsyncTask extends android.os.AsyncTask<Void, Void, Result> {
+  private static final String TAG = "rncameranativemodule";
   private byte[] mImageData;
   private int mWidth;
   private int mHeight;
@@ -55,9 +61,11 @@ public class BarCodeScannerAsyncTask extends android.os.AsyncTask<Void, Void, Re
 
   @Override
   protected Result doInBackground(Void... ignored) {
+    Log.d(TAG, "executing");
     if (isCancelled() || mDelegate == null) {
       return null;
     }
+    Log.d(TAG, "1");
 
     /**
      * mCameraViewWidth and mCameraViewHeight are obtained from portait orientation
@@ -71,7 +79,15 @@ public class BarCodeScannerAsyncTask extends android.os.AsyncTask<Void, Void, Re
     int top = (int) (adjustedScanY * mHeight);
     int scanWidth = (int) (mScanAreaWidth * mWidth);
     int scanHeight = (int) (((mScanAreaHeight * mCameraViewWidth) / adjustedCamViewWidth) * mHeight);
+    Log.d(TAG, "mImageData:: " + mImageData + " mWidth:: " + mWidth + " mHeight:: " + mHeight + " left:: " + left + " top:: " + top + " scanWidth:: " + scanWidth + " scanHeight:: " + scanHeight);
+    byte[] encodedBytes = new byte[0];
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+      encodedBytes = Base64.getEncoder().encode(mImageData);
+    }
 
+    // Converting the encoded bytes to a String
+    String base64String = new String(encodedBytes);
+    Log.d(TAG, "base64String:: " + base64String);
     try {
       try {
         BinaryBitmap bitmap = generateBitmapFromImageData(
@@ -84,12 +100,15 @@ public class BarCodeScannerAsyncTask extends android.os.AsyncTask<Void, Void, Re
                 scanWidth,
                 scanHeight
         );
-        return mMultiFormatReader.decodeWithState(bitmap);
+        Result result = mMultiFormatReader.decodeWithState(bitmap);
+
+        return result;
       } catch (NotFoundException e) {
+        Log.d(TAG, "problem scanning:: " + e.getMessage());
       }
 
       try {
-        BinaryBitmap bitmap = generateBitmapFromImageData(
+        BinaryBitmap rotatedBitmap = generateBitmapFromImageData(
                 rotateImage(mImageData,mWidth, mHeight),
                 mHeight,
                 mWidth,
@@ -99,7 +118,9 @@ public class BarCodeScannerAsyncTask extends android.os.AsyncTask<Void, Void, Re
                 scanHeight,
                 scanWidth
         );
-        return mMultiFormatReader.decodeWithState(bitmap);
+        Result result = mMultiFormatReader.decodeWithState(rotatedBitmap);
+        Log.d(TAG, "3, " + result.getText());
+        return result;
       } catch (NotFoundException e) {
       }
 
@@ -114,7 +135,9 @@ public class BarCodeScannerAsyncTask extends android.os.AsyncTask<Void, Void, Re
                 scanWidth,
                 scanHeight
         );
-        return mMultiFormatReader.decodeWithState(invertedBitmap);
+        Result result = mMultiFormatReader.decodeWithState(invertedBitmap);
+        Log.d(TAG, "4, " + result.getText());
+        return result;
       } catch (NotFoundException e) {
       }
 
@@ -129,9 +152,12 @@ public class BarCodeScannerAsyncTask extends android.os.AsyncTask<Void, Void, Re
                 scanHeight,
                 scanWidth
         );
-        return mMultiFormatReader.decodeWithState(invertedRotatedBitmap);
+        Result result = mMultiFormatReader.decodeWithState(invertedRotatedBitmap);
+        Log.d(TAG, "5, " + result.getText());
+        return result;
       } catch (NotFoundException e) {
       }
+      Log.d(TAG, "6");
     } catch (Throwable t) {
       t.printStackTrace();
     }

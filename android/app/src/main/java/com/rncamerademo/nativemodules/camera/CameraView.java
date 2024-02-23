@@ -18,8 +18,6 @@ package com.rncamerademo.nativemodules.camera;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Rect;
-import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.os.Build;
 import android.os.HandlerThread;
@@ -33,7 +31,6 @@ import androidx.core.os.ParcelableCompat;
 import androidx.core.os.ParcelableCompatCreatorCallbacks;
 import androidx.core.view.ViewCompat;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.graphics.SurfaceTexture;
@@ -83,7 +80,7 @@ public class CameraView extends FrameLayout {
     public @interface Flash {
     }
 
-    CameraViewImpl mImpl;
+    CameraViewImpl mCameraViewImpl;
 
     private final CallbackBridge mCallbacks;
 
@@ -128,14 +125,14 @@ public class CameraView extends FrameLayout {
         final PreviewImpl preview = createPreviewImpl(context);
         mCallbacks = new CallbackBridge();
 				
-				mImpl = new Camera2(mCallbacks, preview, context, mBgHandler);
+				mCameraViewImpl = new Camera2(mCallbacks, preview, context, mBgHandler);
 
         // Display orientation detector
         mDisplayOrientationDetector = new DisplayOrientationDetector(context) {
             @Override
             public void onDisplayOrientationChanged(int displayOrientation, int deviceOrientation) {
-                mImpl.setDisplayOrientation(displayOrientation);
-                mImpl.setDeviceOrientation(deviceOrientation);
+                mCameraViewImpl.setDisplayOrientation(displayOrientation);
+                mCameraViewImpl.setDeviceOrientation(deviceOrientation);
             }
         };
     }
@@ -229,12 +226,12 @@ public class CameraView extends FrameLayout {
         }
         assert ratio != null;
         if (height < width * ratio.getY() / ratio.getX()) {
-            mImpl.getView().measure(
+            mCameraViewImpl.getView().measure(
                     MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
                     MeasureSpec.makeMeasureSpec(width * ratio.getY() / ratio.getX(),
                             MeasureSpec.EXACTLY));
         } else {
-            mImpl.getView().measure(
+            mCameraViewImpl.getView().measure(
                     MeasureSpec.makeMeasureSpec(height * ratio.getX() / ratio.getY(),
                             MeasureSpec.EXACTLY),
                     MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
@@ -300,7 +297,7 @@ public class CameraView extends FrameLayout {
             // } else {
             //     mImpl = new Camera2Api23(mCallbacks, mImpl.mPreview, mContext, mBgHandler);
             // }
-            mImpl = new Camera2(mCallbacks, mImpl.mPreview, mContext, mBgHandler);
+            mCameraViewImpl = new Camera2(mCallbacks, mCameraViewImpl.mPreview, mContext, mBgHandler);
 
             onRestoreInstanceState(state);
         } else {
@@ -324,7 +321,7 @@ public class CameraView extends FrameLayout {
      * {@link Activity#onResume()}.
      */
     public void start() {
-        mImpl.start();
+        mCameraViewImpl.start();
 
         // this fallback is no longer needed and was too buggy/slow
         // if (!mImpl.start()) {
@@ -345,14 +342,14 @@ public class CameraView extends FrameLayout {
      * {@link Activity#onPause()}.
      */
     public void stop() {
-        mImpl.stop();
+        mCameraViewImpl.stop();
     }
 
     /**
      * @return {@code true} if the camera is opened.
      */
     public boolean isCameraOpened() {
-        return mImpl.isCameraOpened();
+        return mCameraViewImpl.isCameraOpened();
     }
 
     /**
@@ -397,8 +394,8 @@ public class CameraView extends FrameLayout {
     }
 
     public View getView() {
-      if (mImpl != null) {
-        return mImpl.getView();
+      if (mCameraViewImpl != null) {
+        return mCameraViewImpl.getView();
       }
       return null;
     }
@@ -410,7 +407,7 @@ public class CameraView extends FrameLayout {
      *               {@link #FACING_FRONT}.
      */
     public void setFacing(@Facing int facing) {
-        mImpl.setFacing(facing);
+        mCameraViewImpl.setFacing(facing);
     }
 
     /**
@@ -421,7 +418,7 @@ public class CameraView extends FrameLayout {
     @Facing
     public int getFacing() {
         //noinspection WrongConstant
-        return mImpl.getFacing();
+        return mCameraViewImpl.getFacing();
     }
 
      /**
@@ -430,7 +427,7 @@ public class CameraView extends FrameLayout {
      * @param id The camera ID
      */
     public void setCameraId(String id) {
-      mImpl.setCameraId(id);
+      mCameraViewImpl.setCameraId(id);
     }
 
     /**
@@ -439,21 +436,21 @@ public class CameraView extends FrameLayout {
      * @return The camera facing.
      */
     public String getCameraId() {
-      return mImpl.getCameraId();
+      return mCameraViewImpl.getCameraId();
     }
 
     /**
      * Gets all the aspect ratios supported by the current camera.
      */
     public Set<AspectRatio> getSupportedAspectRatios() {
-        return mImpl.getSupportedAspectRatios();
+        return mCameraViewImpl.getSupportedAspectRatios();
     }
 
     /**
      * Gets all the camera IDs supported by the phone as a String
      */
     public List<Properties> getCameraIds() {
-        return mImpl.getCameraIds();
+        return mCameraViewImpl.getCameraIds();
     }
 
     /**
@@ -462,7 +459,7 @@ public class CameraView extends FrameLayout {
      * @param ratio The {@link AspectRatio} to be set.
      */
     public void setAspectRatio(@NonNull AspectRatio ratio) {
-        if (mImpl.setAspectRatio(ratio)) {
+        if (mCameraViewImpl.setAspectRatio(ratio)) {
             requestLayout();
         }
     }
@@ -474,7 +471,7 @@ public class CameraView extends FrameLayout {
      */
     @Nullable
     public AspectRatio getAspectRatio() {
-        return mImpl.getAspectRatio();
+        return mCameraViewImpl.getAspectRatio();
     }
 
     /**
@@ -483,7 +480,7 @@ public class CameraView extends FrameLayout {
      * @param ratio {@link AspectRatio} for which the available image sizes will be returned.
      */
     public SortedSet<Size> getAvailablePictureSizes(@NonNull AspectRatio ratio) {
-        return mImpl.getAvailablePictureSizes(ratio);
+        return mCameraViewImpl.getAvailablePictureSizes(ratio);
     }
 
     /**
@@ -492,14 +489,14 @@ public class CameraView extends FrameLayout {
      * @param size The {@link Size} to be set.
      */
     public void setPictureSize(@NonNull Size size) {
-        mImpl.setPictureSize(size);
+        mCameraViewImpl.setPictureSize(size);
     }
 
     /**
      * Gets the size of pictures that will be taken.
      */
     public Size getPictureSize() {
-        return mImpl.getPictureSize();
+        return mCameraViewImpl.getPictureSize();
     }
 
     /**
@@ -510,7 +507,7 @@ public class CameraView extends FrameLayout {
      *                  disable it.
      */
     public void setAutoFocus(boolean autoFocus) {
-        mImpl.setAutoFocus(autoFocus);
+        mCameraViewImpl.setAutoFocus(autoFocus);
     }
 
     /**
@@ -520,7 +517,7 @@ public class CameraView extends FrameLayout {
      * disabled, or if it is not supported by the current camera.
      */
     public boolean getAutoFocus() {
-        return mImpl.getAutoFocus();
+        return mCameraViewImpl.getAutoFocus();
     }
 
     /**
@@ -529,11 +526,11 @@ public class CameraView extends FrameLayout {
      * @param flash The desired flash mode.
      */
     public void setFlash(@Flash int flash) {
-        mImpl.setFlash(flash);
+        mCameraViewImpl.setFlash(flash);
     }
 
     public ArrayList<int[]> getSupportedPreviewFpsRange() {
-      return mImpl.getSupportedPreviewFpsRange();
+      return mCameraViewImpl.getSupportedPreviewFpsRange();
     }
 
     /**
@@ -544,15 +541,15 @@ public class CameraView extends FrameLayout {
     @Flash
     public int getFlash() {
         //noinspection WrongConstant
-        return mImpl.getFlash();
+        return mCameraViewImpl.getFlash();
     }
 
     public void setExposureCompensation(float exposure) {
-        mImpl.setExposureCompensation(exposure);
+        mCameraViewImpl.setExposureCompensation(exposure);
     }
 
     public float getExposureCompensation() {
-        return mImpl.getExposureCompensation();
+        return mCameraViewImpl.getExposureCompensation();
     }
 
 
@@ -562,7 +559,7 @@ public class CameraView extends FrameLayout {
      * @return The orientation of the camera.
      */
     public int getCameraOrientation() {
-        return mImpl.getCameraOrientation();
+        return mCameraViewImpl.getCameraOrientation();
     }
 
     /**
@@ -572,57 +569,57 @@ public class CameraView extends FrameLayout {
      * @param y sets the y coordinate for camera auto focus
      */
     public void setAutoFocusPointOfInterest(float x, float y) {
-        mImpl.setFocusArea(x, y);
+        mCameraViewImpl.setFocusArea(x, y);
     }
 
     public void setFocusDepth(float value) {
-        mImpl.setFocusDepth(value);
+        mCameraViewImpl.setFocusDepth(value);
     }
 
-    public float getFocusDepth() { return mImpl.getFocusDepth(); }
+    public float getFocusDepth() { return mCameraViewImpl.getFocusDepth(); }
 
     public void setZoom(float zoom) {
-      mImpl.setZoom(zoom);
+      mCameraViewImpl.setZoom(zoom);
     }
 
     public float getZoom() {
-      return mImpl.getZoom();
+      return mCameraViewImpl.getZoom();
     }
 
     public void setWhiteBalance(int whiteBalance) {
-      mImpl.setWhiteBalance(whiteBalance);
+      mCameraViewImpl.setWhiteBalance(whiteBalance);
     }
 
     public int getWhiteBalance() {
-      return mImpl.getWhiteBalance();
+      return mCameraViewImpl.getWhiteBalance();
     }
 
     public void setPlaySoundOnCapture(boolean playSoundOnCapture) {
-      mImpl.setPlaySoundOnCapture(playSoundOnCapture);
+      mCameraViewImpl.setPlaySoundOnCapture(playSoundOnCapture);
     }
 
     public boolean getPlaySoundOnCapture() {
-      return mImpl.getPlaySoundOnCapture();
+      return mCameraViewImpl.getPlaySoundOnCapture();
     }
 
     public void setPlaySoundOnRecord(boolean playSoundOnRecord) {
-        mImpl.setPlaySoundOnRecord(playSoundOnRecord);
+        mCameraViewImpl.setPlaySoundOnRecord(playSoundOnRecord);
     }
 
     public boolean getPlaySoundOnRecord() {
-        return mImpl.getPlaySoundOnRecord();
+        return mCameraViewImpl.getPlaySoundOnRecord();
     }
 
-    public void setScanning(boolean isScanning) { mImpl.setScanning(isScanning);}
+    public void setScanning(boolean isScanning) { mCameraViewImpl.setScanning(isScanning);}
 
-    public boolean getScanning() { return mImpl.getScanning(); }
+    public boolean getScanning() { return mCameraViewImpl.getScanning(); }
 
     /**
      * Take a picture. The result will be returned to
      * {@link Callback#onPictureTaken(CameraView, byte[], int)}.
      */
     public void takePicture(ReadableMap options) {
-        mImpl.takePicture(options);
+        mCameraViewImpl.takePicture(options);
     }
 
     /**
@@ -637,35 +634,35 @@ public class CameraView extends FrameLayout {
      */
     public boolean record(String path, int maxDuration, int maxFileSize,
                           boolean recordAudio, CamcorderProfile profile, int orientation, int fps) {
-        return mImpl.record(path, maxDuration, maxFileSize, recordAudio, profile, orientation, fps);
+        return mCameraViewImpl.record(path, maxDuration, maxFileSize, recordAudio, profile, orientation, fps);
     }
 
     public void stopRecording() {
-        mImpl.stopRecording();
+        mCameraViewImpl.stopRecording();
     }
 
     public void pauseRecording() {
-        mImpl.pauseRecording();
+        mCameraViewImpl.pauseRecording();
     }
 
     public void resumeRecording() {
-        mImpl.resumeRecording();
+        mCameraViewImpl.resumeRecording();
     }
 
     public void resumePreview() {
-        mImpl.resumePreview();
+        mCameraViewImpl.resumePreview();
     }
 
     public void pausePreview() {
-        mImpl.pausePreview();
+        mCameraViewImpl.pausePreview();
     }
 
     public void setPreviewTexture(SurfaceTexture surfaceTexture) {
-        mImpl.setPreviewTexture(surfaceTexture);
+        mCameraViewImpl.setPreviewTexture(surfaceTexture);
     }
 
     public Size getPreviewSize() {
-        return mImpl.getPreviewSize();
+        return mCameraViewImpl.getPreviewSize();
     }
 
     private class CallbackBridge implements CameraViewImpl.Callback {
