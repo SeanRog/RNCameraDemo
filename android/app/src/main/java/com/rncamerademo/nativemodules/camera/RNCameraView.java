@@ -45,7 +45,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
   private Queue<Promise> mPictureTakenPromises = new ConcurrentLinkedQueue<>();
   private Map<Promise, ReadableMap> mPictureTakenOptions = new ConcurrentHashMap<>();
   private Map<Promise, File> mPictureTakenDirectories = new ConcurrentHashMap<>();
-  private Promise mVideoRecordedPromise;
   private List<String> mBarCodeTypes = null;
   private boolean mDetectedImageInEvent = false;
 
@@ -57,7 +56,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
   private boolean mIsNew = true;
   private boolean invertImageData = false;
   private Boolean mIsRecording = false;
-  private Boolean mIsRecordingInterrupted = false;
   private boolean mUseNativeZoom=false;
 
   // Concurrency lock for scanners to avoid flooding the runtime
@@ -125,39 +123,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
                   .execute();
         }
         RNCameraViewHelper.emitPictureTakenEvent(cameraView);
-      }
-
-      @Override
-      public void onRecordingStart(CameraView cameraView, String path, int videoOrientation, int deviceOrientation) {
-        WritableMap result = Arguments.createMap();
-        result.putInt("videoOrientation", videoOrientation);
-        result.putInt("deviceOrientation", deviceOrientation);
-        result.putString("uri", RNFileUtils.uriFromFile(new File(path)).toString());
-        RNCameraViewHelper.emitRecordingStartEvent(cameraView, result);
-      }
-
-      @Override
-      public void onRecordingEnd(CameraView cameraView) {
-        RNCameraViewHelper.emitRecordingEndEvent(cameraView);
-      }
-
-      @Override
-      public void onVideoRecorded(CameraView cameraView, String path, int videoOrientation, int deviceOrientation) {
-        if (mVideoRecordedPromise != null) {
-          if (path != null) {
-            WritableMap result = Arguments.createMap();
-            result.putBoolean("isRecordingInterrupted", mIsRecordingInterrupted);
-            result.putInt("videoOrientation", videoOrientation);
-            result.putInt("deviceOrientation", deviceOrientation);
-            result.putString("uri", RNFileUtils.uriFromFile(new File(path)).toString());
-            mVideoRecordedPromise.resolve(result);
-          } else {
-            mVideoRecordedPromise.reject("E_RECORDING", "Couldn't stop recording - there is none in progress");
-          }
-          mIsRecording = false;
-          mIsRecordingInterrupted = false;
-          mVideoRecordedPromise = null;
-        }
       }
 
       @Override
@@ -292,47 +257,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
   @Override
   public void onPictureSaved(WritableMap response) {
     RNCameraViewHelper.emitPictureSavedEvent(this, response);
-  }
-
-  public void record(final ReadableMap options, final Promise promise, final File cacheDirectory) {
-    mBgHandler.post(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          String path = options.hasKey("path") ? options.getString("path") : RNFileUtils.getOutputFilePath(cacheDirectory, ".mp4");
-          int maxDuration = options.hasKey("maxDuration") ? options.getInt("maxDuration") : -1;
-          int maxFileSize = options.hasKey("maxFileSize") ? options.getInt("maxFileSize") : -1;
-          int fps = options.hasKey("fps") ? options.getInt("fps") : -1;
-
-          CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH);
-          if (options.hasKey("quality")) {
-            profile = RNCameraViewHelper.getCamcorderProfile(options.getInt("quality"));
-          }
-          if (options.hasKey("videoBitrate")) {
-            profile.videoBitRate = options.getInt("videoBitrate");
-          }
-
-          boolean recordAudio = true;
-          if (options.hasKey("mute")) {
-            recordAudio = !options.getBoolean("mute");
-          }
-
-          int orientation = Constants.ORIENTATION_AUTO;
-          if (options.hasKey("orientation")) {
-            orientation = options.getInt("orientation");
-          }
-
-          if (RNCameraView.super.record(path, maxDuration * 1000, maxFileSize, recordAudio, profile, orientation, fps)) {
-            mIsRecording = true;
-            mVideoRecordedPromise = promise;
-          } else {
-            promise.reject("E_RECORDING_FAILED", "Starting video recording failed. Another recording might be in progress.");
-          }
-        } catch (IOException e) {
-          promise.reject("E_RECORDING_FAILED", "Starting video recording failed - could not create video file.");
-        }
-      }
-    });
   }
 
   /**
@@ -622,9 +546,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
 
   @Override
   public void onHostPause() {
-    if (mIsRecording) {
-      mIsRecordingInterrupted = true;
-    }
     if (!mIsPaused && isCameraOpened()) {
       mIsPaused = true;
       stop();

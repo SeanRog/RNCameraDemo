@@ -91,11 +91,6 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
     view.setFlash(torchMode);
   }
 
-  @ReactProp(name = "exposure")
-  public void setExposureCompensation(RNCameraView view, float exposure){
-    view.setExposureCompensation(exposure);
-  }
-
   @ReactProp(name = "autoFocus")
   public void setAutoFocus(RNCameraView view, boolean autoFocus) {
     view.setAutoFocus(autoFocus);

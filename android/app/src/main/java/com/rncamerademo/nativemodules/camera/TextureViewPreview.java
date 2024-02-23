@@ -28,39 +28,50 @@ import android.view.ViewGroup;
 import com.rncamerademo.R;
 
 @TargetApi(14)
-class TextureViewPreview extends PreviewImpl {
+class TextureViewPreview {
+    interface Callback {
+        void onSurfaceChanged();
+
+        void onSurfaceDestroyed();
+    }
 
     private final TextureView mTextureView;
+
+    private Callback mCallback;
+
+    private int mWidth;
+
+    private int mHeight;
+
+    void setCallback(Callback callback) {
+        mCallback = callback;
+    }
 
     private int mDisplayOrientation;
 
     TextureViewPreview(Context context, ViewGroup parent) {
         final View view = View.inflate(context, R.layout.texture_view, parent);
-        mTextureView = (TextureView) view.findViewById(R.id.texture_view);
+        mTextureView = view.findViewById(R.id.texture_view);
         mTextureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
 
-            @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                 setDimensions(width, height);
                 configureTransform();
                 dispatchSurfaceChanged();
             }
 
-            @Override
             public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
                 setDimensions(width, height);
                 configureTransform();
                 dispatchSurfaceChanged();
             }
 
-            @Override
             public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
                 setDimensions(0, 0);
                 dispatchSurfaceDestroyed();
                 return true;
             }
 
-            @Override
             public void onSurfaceTextureUpdated(SurfaceTexture surface) {
             }
         });
@@ -68,40 +79,54 @@ class TextureViewPreview extends PreviewImpl {
 
     // This method is called only from Camera2.
     @TargetApi(15)
-    @Override
     void setBufferSize(int width, int height) {
         mTextureView.getSurfaceTexture().setDefaultBufferSize(width, height);
     }
 
-    @Override
+    void setDimensions(int width, int height) {
+        mWidth = width;
+        mHeight = height;
+    }
+
+    int getWidth() {
+        return mWidth;
+    }
+
+    int getHeight() {
+        return mHeight;
+    }
+
     Surface getSurface() {
         return new Surface(mTextureView.getSurfaceTexture());
     }
 
-    @Override
     SurfaceTexture getSurfaceTexture() {
         return mTextureView.getSurfaceTexture();
     }
 
-    @Override
     View getView() {
         return mTextureView;
     }
 
-    @Override
     Class getOutputClass() {
         return SurfaceTexture.class;
     }
 
-    @Override
     void setDisplayOrientation(int displayOrientation) {
         mDisplayOrientation = displayOrientation;
         configureTransform();
     }
 
-    @Override
     boolean isReady() {
         return mTextureView.getSurfaceTexture() != null;
+    }
+
+    protected void dispatchSurfaceChanged() {
+        mCallback.onSurfaceChanged();
+    }
+
+    protected void dispatchSurfaceDestroyed() {
+        mCallback.onSurfaceDestroyed();
     }
 
     /**

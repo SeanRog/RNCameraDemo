@@ -16,9 +16,7 @@
 
 package com.rncamerademo.nativemodules.camera;
 
-import android.app.Activity;
 import android.content.Context;
-import android.media.CamcorderProfile;
 import android.os.Build;
 import android.os.HandlerThread;
 import android.os.Handler;
@@ -80,7 +78,7 @@ public class CameraView extends FrameLayout {
     public @interface Flash {
     }
 
-    CameraViewImpl mCameraViewImpl;
+    Camera2 camera2;
 
     private final CallbackBridge mCallbacks;
 
@@ -122,17 +120,17 @@ public class CameraView extends FrameLayout {
 
         // Internal setup
         // Refactor remove Camera 1 logic
-        final PreviewImpl preview = createPreviewImpl(context);
+        final TextureViewPreview preview = createPreview(context);
         mCallbacks = new CallbackBridge();
 				
-				mCameraViewImpl = new Camera2(mCallbacks, preview, context, mBgHandler);
+				camera2 = new Camera2(mCallbacks, preview, context, mBgHandler);
 
         // Display orientation detector
         mDisplayOrientationDetector = new DisplayOrientationDetector(context) {
             @Override
             public void onDisplayOrientationChanged(int displayOrientation, int deviceOrientation) {
-                mCameraViewImpl.setDisplayOrientation(displayOrientation);
-                mCameraViewImpl.setDeviceOrientation(deviceOrientation);
+                camera2.setDisplayOrientation(displayOrientation);
+                camera2.setDeviceOrientation(deviceOrientation);
             }
         };
     }
@@ -151,8 +149,8 @@ public class CameraView extends FrameLayout {
     }
 
     @NonNull
-    private PreviewImpl createPreviewImpl(Context context) {
-        PreviewImpl preview;
+    private TextureViewPreview createPreview(Context context) {
+        TextureViewPreview preview;
         if (Build.VERSION.SDK_INT < 14) {
             // preview = new SurfaceViewPreview(context, this);
             throw new RuntimeException("can't create preview. SDK version is too old. Build.VERSION.SDK_INT:: " + Build.VERSION.SDK_INT);
@@ -226,12 +224,12 @@ public class CameraView extends FrameLayout {
         }
         assert ratio != null;
         if (height < width * ratio.getY() / ratio.getX()) {
-            mCameraViewImpl.getView().measure(
+            camera2.getView().measure(
                     MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
                     MeasureSpec.makeMeasureSpec(width * ratio.getY() / ratio.getX(),
                             MeasureSpec.EXACTLY));
         } else {
-            mCameraViewImpl.getView().measure(
+            camera2.getView().measure(
                     MeasureSpec.makeMeasureSpec(height * ratio.getX() / ratio.getY(),
                             MeasureSpec.EXACTLY),
                     MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
@@ -246,7 +244,6 @@ public class CameraView extends FrameLayout {
         state.ratio = getAspectRatio();
         state.autoFocus = getAutoFocus();
         state.flash = getFlash();
-        state.exposure = getExposureCompensation();
         state.focusDepth = getFocusDepth();
         state.zoom = getZoom();
         state.whiteBalance = getWhiteBalance();
@@ -270,7 +267,6 @@ public class CameraView extends FrameLayout {
         setAspectRatio(ss.ratio);
         setAutoFocus(ss.autoFocus);
         setFlash(ss.flash);
-        setExposureCompensation(ss.exposure);
         setFocusDepth(ss.focusDepth);
         setZoom(ss.zoom);
         setWhiteBalance(ss.whiteBalance);
@@ -288,29 +284,12 @@ public class CameraView extends FrameLayout {
         boolean wasOpened = isCameraOpened();
         Parcelable state = onSaveInstanceState();
 
-        if (useCamera2 && !Camera2.isLegacy(mContext)) {
-            if (wasOpened) {
-                stop();
-            }
-            // if (Build.VERSION.SDK_INT < 23) {
-            //     mImpl = new Camera2(mCallbacks, mImpl.mPreview, mContext, mBgHandler);
-            // } else {
-            //     mImpl = new Camera2Api23(mCallbacks, mImpl.mPreview, mContext, mBgHandler);
-            // }
-            mCameraViewImpl = new Camera2(mCallbacks, mCameraViewImpl.mPreview, mContext, mBgHandler);
-
-            onRestoreInstanceState(state);
-        } else {
-            // if (mImpl instanceof Camera1) {
-            //     return;
-            // }
-
-            // if (wasOpened) {
-            //     stop();
-            // }
-            // mImpl = new Camera1(mCallbacks, mImpl.mPreview, mBgHandler);
-            throw new RuntimeException("Camera1 deprecated. Use Camera 2");
+        if (wasOpened) {
+            stop();
         }
+        camera2 = new Camera2(mCallbacks, camera2.mPreview, mContext, mBgHandler);
+
+        onRestoreInstanceState(state);
         if(wasOpened){
             start();
         }
@@ -318,38 +297,25 @@ public class CameraView extends FrameLayout {
 
     /**
      * Open a camera device and start showing camera preview. This is typically called from
-     * {@link Activity#onResume()}.
+     * Activity#onResume().
      */
     public void start() {
-        mCameraViewImpl.start();
-
-        // this fallback is no longer needed and was too buggy/slow
-        // if (!mImpl.start()) {
-        //     if (mImpl.getView() != null) {
-        //         this.removeView(mImpl.getView());
-        //     }
-        //     //store the state and restore this state after fall back to Camera1
-        //     Parcelable state = onSaveInstanceState();
-        //     // Camera2 uses legacy hardware layer; fall back to Camera1
-        //     mImpl = new Camera1(mCallbacks, createPreviewImpl(getContext()), mBgHandler);
-        //     onRestoreInstanceState(state);
-        //     mImpl.start();
-        // }
+        camera2.start();
     }
 
     /**
      * Stop camera preview and close the device. This is typically called from
-     * {@link Activity#onPause()}.
+     * Activity#onPause().
      */
     public void stop() {
-        mCameraViewImpl.stop();
+        camera2.stop();
     }
 
     /**
      * @return {@code true} if the camera is opened.
      */
     public boolean isCameraOpened() {
-        return mCameraViewImpl.isCameraOpened();
+        return camera2.isCameraOpened();
     }
 
     /**
@@ -394,8 +360,8 @@ public class CameraView extends FrameLayout {
     }
 
     public View getView() {
-      if (mCameraViewImpl != null) {
-        return mCameraViewImpl.getView();
+      if (camera2 != null) {
+        return camera2.getView();
       }
       return null;
     }
@@ -407,7 +373,7 @@ public class CameraView extends FrameLayout {
      *               {@link #FACING_FRONT}.
      */
     public void setFacing(@Facing int facing) {
-        mCameraViewImpl.setFacing(facing);
+        camera2.setFacing(facing);
     }
 
     /**
@@ -418,7 +384,7 @@ public class CameraView extends FrameLayout {
     @Facing
     public int getFacing() {
         //noinspection WrongConstant
-        return mCameraViewImpl.getFacing();
+        return camera2.getFacing();
     }
 
      /**
@@ -427,7 +393,7 @@ public class CameraView extends FrameLayout {
      * @param id The camera ID
      */
     public void setCameraId(String id) {
-      mCameraViewImpl.setCameraId(id);
+      camera2.setCameraId(id);
     }
 
     /**
@@ -436,21 +402,21 @@ public class CameraView extends FrameLayout {
      * @return The camera facing.
      */
     public String getCameraId() {
-      return mCameraViewImpl.getCameraId();
+      return camera2.getCameraId();
     }
 
     /**
      * Gets all the aspect ratios supported by the current camera.
      */
     public Set<AspectRatio> getSupportedAspectRatios() {
-        return mCameraViewImpl.getSupportedAspectRatios();
+        return camera2.getSupportedAspectRatios();
     }
 
     /**
      * Gets all the camera IDs supported by the phone as a String
      */
     public List<Properties> getCameraIds() {
-        return mCameraViewImpl.getCameraIds();
+        return camera2.getCameraIds();
     }
 
     /**
@@ -459,7 +425,7 @@ public class CameraView extends FrameLayout {
      * @param ratio The {@link AspectRatio} to be set.
      */
     public void setAspectRatio(@NonNull AspectRatio ratio) {
-        if (mCameraViewImpl.setAspectRatio(ratio)) {
+        if (camera2.setAspectRatio(ratio)) {
             requestLayout();
         }
     }
@@ -471,7 +437,7 @@ public class CameraView extends FrameLayout {
      */
     @Nullable
     public AspectRatio getAspectRatio() {
-        return mCameraViewImpl.getAspectRatio();
+        return camera2.getAspectRatio();
     }
 
     /**
@@ -480,7 +446,7 @@ public class CameraView extends FrameLayout {
      * @param ratio {@link AspectRatio} for which the available image sizes will be returned.
      */
     public SortedSet<Size> getAvailablePictureSizes(@NonNull AspectRatio ratio) {
-        return mCameraViewImpl.getAvailablePictureSizes(ratio);
+        return camera2.getAvailablePictureSizes(ratio);
     }
 
     /**
@@ -489,14 +455,14 @@ public class CameraView extends FrameLayout {
      * @param size The {@link Size} to be set.
      */
     public void setPictureSize(@NonNull Size size) {
-        mCameraViewImpl.setPictureSize(size);
+        camera2.setPictureSize(size);
     }
 
     /**
      * Gets the size of pictures that will be taken.
      */
     public Size getPictureSize() {
-        return mCameraViewImpl.getPictureSize();
+        return camera2.getPictureSize();
     }
 
     /**
@@ -507,7 +473,7 @@ public class CameraView extends FrameLayout {
      *                  disable it.
      */
     public void setAutoFocus(boolean autoFocus) {
-        mCameraViewImpl.setAutoFocus(autoFocus);
+        camera2.setAutoFocus(autoFocus);
     }
 
     /**
@@ -517,7 +483,7 @@ public class CameraView extends FrameLayout {
      * disabled, or if it is not supported by the current camera.
      */
     public boolean getAutoFocus() {
-        return mCameraViewImpl.getAutoFocus();
+        return camera2.getAutoFocus();
     }
 
     /**
@@ -526,11 +492,11 @@ public class CameraView extends FrameLayout {
      * @param flash The desired flash mode.
      */
     public void setFlash(@Flash int flash) {
-        mCameraViewImpl.setFlash(flash);
+        camera2.setFlash(flash);
     }
 
     public ArrayList<int[]> getSupportedPreviewFpsRange() {
-      return mCameraViewImpl.getSupportedPreviewFpsRange();
+      return camera2.getSupportedPreviewFpsRange();
     }
 
     /**
@@ -541,15 +507,7 @@ public class CameraView extends FrameLayout {
     @Flash
     public int getFlash() {
         //noinspection WrongConstant
-        return mCameraViewImpl.getFlash();
-    }
-
-    public void setExposureCompensation(float exposure) {
-        mCameraViewImpl.setExposureCompensation(exposure);
-    }
-
-    public float getExposureCompensation() {
-        return mCameraViewImpl.getExposureCompensation();
+        return camera2.getFlash();
     }
 
 
@@ -559,7 +517,7 @@ public class CameraView extends FrameLayout {
      * @return The orientation of the camera.
      */
     public int getCameraOrientation() {
-        return mCameraViewImpl.getCameraOrientation();
+        return camera2.getCameraOrientation();
     }
 
     /**
@@ -569,103 +527,76 @@ public class CameraView extends FrameLayout {
      * @param y sets the y coordinate for camera auto focus
      */
     public void setAutoFocusPointOfInterest(float x, float y) {
-        mCameraViewImpl.setFocusArea(x, y);
+        camera2.setFocusArea(x, y);
     }
 
     public void setFocusDepth(float value) {
-        mCameraViewImpl.setFocusDepth(value);
+        camera2.setFocusDepth(value);
     }
 
-    public float getFocusDepth() { return mCameraViewImpl.getFocusDepth(); }
+    public float getFocusDepth() { return camera2.getFocusDepth(); }
 
     public void setZoom(float zoom) {
-      mCameraViewImpl.setZoom(zoom);
+      camera2.setZoom(zoom);
     }
 
     public float getZoom() {
-      return mCameraViewImpl.getZoom();
+      return camera2.getZoom();
     }
 
     public void setWhiteBalance(int whiteBalance) {
-      mCameraViewImpl.setWhiteBalance(whiteBalance);
+      camera2.setWhiteBalance(whiteBalance);
     }
 
     public int getWhiteBalance() {
-      return mCameraViewImpl.getWhiteBalance();
+      return camera2.getWhiteBalance();
     }
 
     public void setPlaySoundOnCapture(boolean playSoundOnCapture) {
-      mCameraViewImpl.setPlaySoundOnCapture(playSoundOnCapture);
+      camera2.setPlaySoundOnCapture(playSoundOnCapture);
     }
 
     public boolean getPlaySoundOnCapture() {
-      return mCameraViewImpl.getPlaySoundOnCapture();
+      return camera2.getPlaySoundOnCapture();
     }
 
     public void setPlaySoundOnRecord(boolean playSoundOnRecord) {
-        mCameraViewImpl.setPlaySoundOnRecord(playSoundOnRecord);
+        camera2.setPlaySoundOnRecord(playSoundOnRecord);
     }
 
     public boolean getPlaySoundOnRecord() {
-        return mCameraViewImpl.getPlaySoundOnRecord();
+        return camera2.getPlaySoundOnRecord();
     }
 
-    public void setScanning(boolean isScanning) { mCameraViewImpl.setScanning(isScanning);}
+    public void setScanning(boolean isScanning) { camera2.setScanning(isScanning);}
 
-    public boolean getScanning() { return mCameraViewImpl.getScanning(); }
+    public boolean getScanning() { return camera2.getScanning(); }
 
     /**
      * Take a picture. The result will be returned to
-     * {@link Callback#onPictureTaken(CameraView, byte[], int)}.
+     * Callback#onPictureTaken(CameraView, byte[], int).
      */
     public void takePicture(ReadableMap options) {
-        mCameraViewImpl.takePicture(options);
-    }
-
-    /**
-     * Record a video and save it to file. The result will be returned to
-     * {@link Callback#onVideoRecorded(CameraView, String, int, int)}.
-     * @param path Path to file that video will be saved to.
-     * @param maxDuration Maximum duration of the recording, in seconds.
-     * @param maxFileSize Maximum recording file size, in bytes.
-     * @param profile Quality profile of the recording.
-     *
-     * fires {@link Callback#onRecordingStart(CameraView, String, int, int)} and {@link Callback#onRecordingEnd(CameraView)}.
-     */
-    public boolean record(String path, int maxDuration, int maxFileSize,
-                          boolean recordAudio, CamcorderProfile profile, int orientation, int fps) {
-        return mCameraViewImpl.record(path, maxDuration, maxFileSize, recordAudio, profile, orientation, fps);
-    }
-
-    public void stopRecording() {
-        mCameraViewImpl.stopRecording();
-    }
-
-    public void pauseRecording() {
-        mCameraViewImpl.pauseRecording();
-    }
-
-    public void resumeRecording() {
-        mCameraViewImpl.resumeRecording();
+        camera2.takePicture(options);
     }
 
     public void resumePreview() {
-        mCameraViewImpl.resumePreview();
+        camera2.resumePreview();
     }
 
     public void pausePreview() {
-        mCameraViewImpl.pausePreview();
+        camera2.pausePreview();
     }
 
     public void setPreviewTexture(SurfaceTexture surfaceTexture) {
-        mCameraViewImpl.setPreviewTexture(surfaceTexture);
+        camera2.setPreviewTexture(surfaceTexture);
     }
 
     public Size getPreviewSize() {
-        return mCameraViewImpl.getPreviewSize();
+        return camera2.getPreviewSize();
     }
 
-    private class CallbackBridge implements CameraViewImpl.Callback {
+    private class CallbackBridge implements Camera2.Callback {
 
         private final ArrayList<Callback> mCallbacks = new ArrayList<>();
 
@@ -704,27 +635,6 @@ public class CameraView extends FrameLayout {
         public void onPictureTaken(byte[] data, int deviceOrientation, int softwareRotation) {
             for (Callback callback : mCallbacks) {
                 callback.onPictureTaken(CameraView.this, data, deviceOrientation, softwareRotation);
-            }
-        }
-
-        @Override
-        public void onRecordingStart(String path, int videoOrientation, int deviceOrientation) {
-            for (Callback callback : mCallbacks) {
-                callback.onRecordingStart(CameraView.this, path, videoOrientation, deviceOrientation);
-            }
-        }
-
-        @Override
-        public void onRecordingEnd() {
-            for (Callback callback : mCallbacks) {
-                callback.onRecordingEnd(CameraView.this);
-            }
-        }
-
-        @Override
-        public void onVideoRecorded(String path, int videoOrientation, int deviceOrientation) {
-            for (Callback callback : mCallbacks) {
-                callback.onVideoRecorded(CameraView.this, path, videoOrientation, deviceOrientation);
             }
         }
 
@@ -861,30 +771,6 @@ public class CameraView extends FrameLayout {
          * @param data       JPEG data.
          */
         public void onPictureTaken(CameraView cameraView, byte[] data, int deviceOrientation, int softwareRotation) {}
-
-        /**
-         * Called when a video recording starts
-         *
-         * @param cameraView The associated {@link CameraView}.
-         * @param path       Path to recoredd video file.
-         */
-        public void onRecordingStart(CameraView cameraView, String path, int videoOrientation, int deviceOrientation) {}
-
-        /**
-         * Called when a video recording ends, but before video is saved/processed.
-         *
-         * @param cameraView The associated {@link CameraView}.
-         * @param path       Path to recoredd video file.
-         */
-        public void onRecordingEnd(CameraView cameraView){}
-
-        /**
-         * Called when a video is recorded.
-         *
-         * @param cameraView The associated {@link CameraView}.
-         * @param path       Path to recoredd video file.
-         */
-        public void onVideoRecorded(CameraView cameraView, String path, int videoOrientation, int deviceOrientation) {}
 
         public void onFramePreview(CameraView cameraView, byte[] data, int width, int height, int orientation) {}
 
