@@ -2,6 +2,7 @@ package com.rncamerademo.nativemodules.camera;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -11,7 +12,13 @@ import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.media.CamcorderProfile;
 import android.os.Build;
+
+import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -19,6 +26,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.os.AsyncTask;
+import android.widget.FrameLayout;
 
 import com.facebook.react.bridge.*;
 import com.facebook.react.uimanager.ThemedReactContext;
@@ -34,14 +42,62 @@ import com.rncamerademo.nativemodules.camera.utils.RNFileUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class RNCameraView extends CameraView implements LifecycleEventListener, BarCodeScannerAsyncTaskDelegate, FaceDetectorAsyncTaskDelegate,
+public class RNCameraView extends FrameLayout implements LifecycleEventListener, BarCodeScannerAsyncTaskDelegate, FaceDetectorAsyncTaskDelegate,
     BarcodeDetectorAsyncTaskDelegate, TextRecognizerAsyncTaskDelegate, PictureSavedDelegate {
   private static final String TAG = "rncameranativemodule";
+
+  /** The camera device faces the opposite direction as the device's screen. */
+  public static final int FACING_BACK = Constants.FACING_BACK;
+
+  /** The camera device faces the same direction as the device's screen. */
+  public static final int FACING_FRONT = Constants.FACING_FRONT;
+
+  /** Direction the camera faces relative to device screen. */
+  @IntDef({FACING_BACK, FACING_FRONT})
+  @Retention(RetentionPolicy.SOURCE)
+  public @interface Facing {
+  }
+
+  /** Flash will not be fired. */
+  public static final int FLASH_OFF = Constants.FLASH_OFF;
+
+  /** Flash will always be fired during snapshot. */
+  public static final int FLASH_ON = Constants.FLASH_ON;
+
+  /** Constant emission of light during preview, auto-focus and snapshot. */
+  public static final int FLASH_TORCH = Constants.FLASH_TORCH;
+
+  /** Flash will be fired automatically when required. */
+  public static final int FLASH_AUTO = Constants.FLASH_AUTO;
+
+  /** Flash will be fired in red-eye reduction mode. */
+  public static final int FLASH_RED_EYE = Constants.FLASH_RED_EYE;
+
+  /** The mode for for the camera device's flash control */
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({FLASH_OFF, FLASH_ON, FLASH_TORCH, FLASH_AUTO, FLASH_RED_EYE})
+  public @interface Flash {
+  }
+
+  Camera2 mCamera2;
+
+  private final CallbackBridge mCallbacks;
+
+  private boolean mAdjustViewBounds;
+
   private ThemedReactContext mThemedReactContext;
+
+  private final DisplayOrientationDetector mDisplayOrientationDetector;
+
+  protected HandlerThread mBgThread;
+
+  protected Handler mBgHandler;
   private Queue<Promise> mPictureTakenPromises = new ConcurrentLinkedQueue<>();
   private Map<Promise, ReadableMap> mPictureTakenOptions = new ConcurrentHashMap<>();
   private Map<Promise, File> mPictureTakenDirectories = new ConcurrentHashMap<>();
@@ -92,23 +148,39 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
   private int mCameraViewHeight = 0;
 
   public RNCameraView(ThemedReactContext themedReactContext) {
-    super(themedReactContext, false);
+    super(themedReactContext, null, 0);
     mThemedReactContext = themedReactContext;
     themedReactContext.addLifecycleEventListener(this);
 
-    addCallback(new Callback() {
+    // bg hanadler for non UI heavy work
+    mBgThread = new HandlerThread("RNCamera-Handler-Thread");
+    mBgThread.start();
+    mBgHandler = new Handler(mBgThread.getLooper());
+    mAdjustViewBounds = true;
+    final TextureViewPreview preview = createPreview(mThemedReactContext);
+    mCallbacks = new CallbackBridge();
+
+    mCamera2 = new Camera2(mCallbacks, preview, mThemedReactContext, mBgHandler);
+
+    // Display orientation detector
+    mDisplayOrientationDetector = new DisplayOrientationDetector(mThemedReactContext) {
       @Override
-      public void onCameraOpened(CameraView cameraView) {
-        RNCameraViewHelper.emitCameraReadyEvent(cameraView);
+      public void onDisplayOrientationChanged(int displayOrientation, int deviceOrientation) {
+        mCamera2.setDisplayOrientation(displayOrientation);
+        mCamera2.setDeviceOrientation(deviceOrientation);
+      }
+    };
+
+    addCallback(new Callback() {
+      public void onCameraOpened(RNCameraView rnCameraView) {
+        RNCameraViewHelper.emitCameraReadyEvent(rnCameraView);
       }
 
-      @Override
-      public void onMountError(CameraView cameraView) {
+      public void onMountError(RNCameraView cameraView) {
         RNCameraViewHelper.emitMountErrorEvent(cameraView, "Camera view threw an error - component could not be rendered.");
       }
 
-      @Override
-      public void onPictureTaken(CameraView cameraView, final byte[] data, int deviceOrientation, int softwareRotation) {
+      public void onPictureTaken(RNCameraView cameraView, final byte[] data, int deviceOrientation, int softwareRotation) {
         Promise promise = mPictureTakenPromises.poll();
         ReadableMap options = mPictureTakenOptions.remove(promise);
         if (options.hasKey("fastMode") && options.getBoolean("fastMode")) {
@@ -125,9 +197,8 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
         RNCameraViewHelper.emitPictureTakenEvent(cameraView);
       }
 
-      @Override
-      public void onFramePreview(CameraView cameraView, byte[] data, int width, int height, int rotation) {
-        int correctRotation = RNCameraViewHelper.getCorrectCameraRotation(rotation, getFacing(), getCameraOrientation());
+      public void onFramePreview(RNCameraView cameraView, byte[] data, int width, int height, int rotation) {
+        int correctRotation = RNCameraViewHelper.getCorrectCameraRotation(rotation, mCamera2.getFacing(), mCamera2.getCameraOrientation());
         boolean willCallBarCodeTask = mShouldScanBarCodes && !barCodeScannerTaskLock && cameraView instanceof BarCodeScannerAsyncTaskDelegate;
         boolean willCallFaceTask = mShouldDetectFaces && !faceDetectorTaskLock && cameraView instanceof FaceDetectorAsyncTaskDelegate;
         boolean willCallGoogleBarcodeTask = mShouldGoogleDetectBarcodes && !googleBarcodeDetectorTaskLock && cameraView instanceof BarcodeDetectorAsyncTaskDelegate;
@@ -143,13 +214,13 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
           Log.d(TAG, "starting barcode task");
           barCodeScannerTaskLock = true;
           BarCodeScannerAsyncTaskDelegate delegate = (BarCodeScannerAsyncTaskDelegate) cameraView;
-          new BarCodeScannerAsyncTask(delegate, mMultiFormatReader, data, width, height, mLimitScanArea, mScanAreaX, mScanAreaY, mScanAreaWidth, mScanAreaHeight, mCameraViewWidth, mCameraViewHeight, getAspectRatio().toFloat()).execute();
+          new BarCodeScannerAsyncTask(delegate, mMultiFormatReader, data, width, height, mLimitScanArea, mScanAreaX, mScanAreaY, mScanAreaWidth, mScanAreaHeight, mCameraViewWidth, mCameraViewHeight, mCamera2.getAspectRatio().toFloat()).execute();
         }
 
         if (willCallFaceTask) {
           faceDetectorTaskLock = true;
           FaceDetectorAsyncTaskDelegate delegate = (FaceDetectorAsyncTaskDelegate) cameraView;
-          new FaceDetectorAsyncTask(delegate, mFaceDetector, data, width, height, correctRotation, getResources().getDisplayMetrics().density, getFacing(), getWidth(), getHeight(), mPaddingX, mPaddingY).execute();
+          new FaceDetectorAsyncTask(delegate, mFaceDetector, data, width, height, correctRotation, getResources().getDisplayMetrics().density, mCamera2.getFacing(), getWidth(), getHeight(), mPaddingX, mPaddingY).execute();
         }
 
         if (willCallGoogleBarcodeTask) {
@@ -168,20 +239,31 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
           }
           BarcodeDetectorAsyncTaskDelegate delegate = (BarcodeDetectorAsyncTaskDelegate) cameraView;
           new BarcodeDetectorAsyncTask(delegate, mGoogleBarcodeDetector, data, width, height,
-                  correctRotation, getResources().getDisplayMetrics().density, getFacing(),
+                  correctRotation, getResources().getDisplayMetrics().density, mCamera2.getFacing(),
                   getWidth(), getHeight(), mPaddingX, mPaddingY).execute();
         }
 
         if (willCallTextTask) {
           textRecognizerTaskLock = true;
           TextRecognizerAsyncTaskDelegate delegate = (TextRecognizerAsyncTaskDelegate) cameraView;
-          new TextRecognizerAsyncTask(delegate, mThemedReactContext, data, width, height, correctRotation, getResources().getDisplayMetrics().density, getFacing(), getWidth(), getHeight(), mPaddingX, mPaddingY).execute();
+          new TextRecognizerAsyncTask(delegate, mThemedReactContext, data, width, height, correctRotation, getResources().getDisplayMetrics().density, mCamera2.getFacing(), getWidth(), getHeight(), mPaddingX, mPaddingY).execute();
         }
       }
     });
   }
 
-  @Override
+  public SortedSet<Size> getAvailablePictureSizes(@NonNull AspectRatio ratio) {
+    return mCamera2.getAvailablePictureSizes(ratio);
+  }
+
+  public List<Properties> getCameraIds() {
+    return mCamera2.getCameraIds();
+  }
+
+  public void addCallback(@NonNull Callback callback) {
+    mCallbacks.add(callback);
+  }
+
   protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
     View preview = getView();
     if (null == preview) {
@@ -189,7 +271,7 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     }
     float width = right - left;
     float height = bottom - top;
-    float ratio = getAspectRatio().toFloat();
+    float ratio = mCamera2.getAspectRatio().toFloat();
     int orientation = getResources().getConfiguration().orientation;
     int correctHeight;
     int correctWidth;
@@ -218,8 +300,68 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     preview.layout(paddingX, paddingY, correctWidth + paddingX, correctHeight + paddingY);
   }
 
+  public View getView() {
+    if (mCamera2 != null) {
+      return mCamera2.getView();
+    }
+    return null;
+  }
+
+  public void setFacing(@Facing int facing) {
+    mCamera2.setFacing(facing);
+  }
+
+  public void setCameraId(String id) {
+    mCamera2.setCameraId(id);
+  }
+
+  public void setAspectRatio(@NonNull AspectRatio ratio) {
+    if (mCamera2.setAspectRatio(ratio)) {
+      requestLayout();
+    }
+  }
+
+  public void setFlash(@Flash int flash) {
+    mCamera2.setFlash(flash);
+  }
+
+  public ArrayList<int[]> getSupportedPreviewFpsRange() {
+    return mCamera2.getSupportedPreviewFpsRange();
+  }
+
+  public void setAutoFocus(boolean autoFocus) {
+    mCamera2.setAutoFocus(autoFocus);
+  }
+
+  public void setFocusDepth(float value) {
+    mCamera2.setFocusDepth(value);
+  }
+
+  public void setAutoFocusPointOfInterest(float x, float y) {
+    mCamera2.setFocusArea(x, y);
+  }
+
+  public void setZoom(float zoom) {
+    mCamera2.setZoom(zoom);
+  }
+
+  public void setWhiteBalance(int whiteBalance) {
+    mCamera2.setWhiteBalance(whiteBalance);
+  }
+
+  public void setPlaySoundOnCapture(boolean playSoundOnCapture) {
+    mCamera2.setPlaySoundOnCapture(playSoundOnCapture);
+  }
+
+  public void setPictureSize(@NonNull Size size) {
+    mCamera2.setPictureSize(size);
+  }
+
+  public void setPlaySoundOnRecord(boolean playSoundOnRecord) {
+    mCamera2.setPlaySoundOnRecord(playSoundOnRecord);
+  }
+
   @SuppressLint("all")
-  @Override
   public void requestLayout() {
     // React handles this for us, so we don't need to call super.requestLayout();
   }
@@ -242,7 +384,7 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
         mPictureTakenDirectories.put(promise, cacheDirectory);
 
         try {
-          RNCameraView.super.takePicture(options);
+          mCamera2.takePicture(options);
         } catch (Exception e) {
           mPictureTakenPromises.remove(promise);
           mPictureTakenOptions.remove(promise);
@@ -254,7 +396,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     });
   }
 
-  @Override
   public void onPictureSaved(WritableMap response) {
     RNCameraViewHelper.emitPictureSavedEvent(this, response);
   }
@@ -287,7 +428,7 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
       initBarcodeReader();
     }
     this.mShouldScanBarCodes = shouldScanBarCodes;
-    setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
+    mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
   }
 
   public void onBarCodeRead(Result barCode, int width, int height, byte[] imageData) {
@@ -356,7 +497,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     mUseNativeZoom=useNativeZoom;
   }
 
-  @Override
   public boolean onTouchEvent(MotionEvent event) {
     if(mUseNativeZoom) {
       mScaleGestureDetector.onTouchEvent(event);
@@ -411,7 +551,7 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
       setupFaceDetector();
     }
     this.mShouldDetectFaces = shouldDetectFaces;
-    setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
+    mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
   }
 
   public void onFacesDetected(WritableArray data) {
@@ -430,7 +570,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     RNCameraViewHelper.emitFaceDetectionErrorEvent(this, faceDetector);
   }
 
-  @Override
   public void onFaceDetectingTaskCompleted() {
     faceDetectorTaskLock = false;
   }
@@ -448,7 +587,7 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
       setupBarcodeDetector();
     }
     this.mShouldGoogleDetectBarcodes = shouldDetectBarcodes;
-    setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
+    mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
   }
 
   public void setGoogleVisionBarcodeType(int barcodeType) {
@@ -494,7 +633,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     RNCameraViewHelper.emitBarcodeDetectionErrorEvent(this, barcodeDetector);
   }
 
-  @Override
   public void onBarcodeDetectingTaskCompleted() {
     googleBarcodeDetectorTaskLock = false;
   }
@@ -506,7 +644,7 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
 
   public void setShouldRecognizeText(boolean shouldRecognizeText) {
     this.mShouldRecognizeText = shouldRecognizeText;
-    setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
+    mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
   }
 
   public void onTextRecognized(WritableArray serializedData) {
@@ -517,7 +655,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     RNCameraViewHelper.emitTextRecognizedEvent(this, serializedData);
   }
 
-  @Override
   public void onTextRecognizerTaskCompleted() {
     textRecognizerTaskLock = false;
   }
@@ -526,7 +663,6 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
   *
   * End Text Recognition */
 
-  @Override
   public void onHostResume() {
     if (hasCameraPermissions()) {
       mBgHandler.post(new Runnable() {
@@ -535,7 +671,7 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
           if ((mIsPaused && !isCameraOpened()) || mIsNew) {
             mIsPaused = false;
             mIsNew = false;
-            start();
+            mCamera2.start();
           }
         }
       });
@@ -544,15 +680,29 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     }
   }
 
-  @Override
+  public boolean isCameraOpened() {
+    return mCamera2.isCameraOpened();
+  }
+
   public void onHostPause() {
     if (!mIsPaused && isCameraOpened()) {
       mIsPaused = true;
-      stop();
+      mCamera2.stop();
     }
   }
 
-  @Override
+  public void pausePreview() {
+    mCamera2.pausePreview();
+  }
+
+  public void resumePreview() {
+    mCamera2.resumePreview();
+  }
+
+  public Set<AspectRatio> getSupportedAspectRatios() {
+    return mCamera2.getSupportedAspectRatios();
+  }
+
   public void onHostDestroy() {
     if (mFaceDetector != null) {
       mFaceDetector.release();
@@ -568,19 +718,27 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     mBgHandler.post(new Runnable() {
         @Override
         public void run() {
-          stop();
+          mCamera2.stop();
           cleanup();
         }
       });
   }
+
+  public void cleanup(){
+    if(mBgThread != null){
+      mBgThread.quitSafely();
+      mBgThread = null;
+    }
+  }
+
   private void onZoom(float scale){
-    float currentZoom=getZoom();
+    float currentZoom=mCamera2.getZoom();
     float nextZoom=currentZoom+(scale-1.0f);
 
     if(nextZoom > currentZoom){
-      setZoom(Math.min(nextZoom,1.0f));
+      mCamera2.setZoom(Math.min(nextZoom,1.0f));
     }else{
-      setZoom(Math.max(nextZoom,0.0f));
+      mCamera2.setZoom(Math.max(nextZoom,0.0f));
     }
 
   }
@@ -599,6 +757,80 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     DisplayMetrics dm = resources.getDisplayMetrics();
     return (int)(raw/ dm.density);
   }
+
+  private class CallbackBridge implements Camera2.Callback {
+
+    private final ArrayList<Callback> mCallbacks = new ArrayList<>();
+
+    private boolean mRequestLayoutOnOpen;
+
+    CallbackBridge() {
+    }
+
+    public void add(Callback callback) {
+      mCallbacks.add(callback);
+    }
+
+    public void remove(Callback callback) {
+      mCallbacks.remove(callback);
+    }
+
+    @Override
+    public void onCameraOpened() {
+      if (mRequestLayoutOnOpen) {
+        mRequestLayoutOnOpen = false;
+        requestLayout();
+      }
+      for (Callback callback : mCallbacks) {
+        callback.onCameraOpened(RNCameraView.this);
+      }
+    }
+
+    @Override
+    public void onCameraClosed() {
+      for (Callback callback : mCallbacks) {
+        callback.onCameraClosed(RNCameraView.this);
+      }
+    }
+
+    @Override
+    public void onPictureTaken(byte[] data, int deviceOrientation, int softwareRotation) {
+      for (Callback callback : mCallbacks) {
+        callback.onPictureTaken(RNCameraView.this, data, deviceOrientation, softwareRotation);
+      }
+    }
+
+    @Override
+    public void onFramePreview(byte[] data, int width, int height, int orientation) {
+      for (Callback callback : mCallbacks) {
+        callback.onFramePreview(RNCameraView.this, data, width, height, orientation);
+      }
+    }
+
+    @Override
+    public void onMountError() {
+      for (Callback callback : mCallbacks) {
+        callback.onMountError(RNCameraView.this);
+      }
+    }
+
+    public void reserveRequestLayoutOnOpen() {
+      mRequestLayoutOnOpen = true;
+    }
+  }
+
+  @NonNull
+  private TextureViewPreview createPreview(Context context) {
+    TextureViewPreview preview;
+    if (Build.VERSION.SDK_INT < 14) {
+      // preview = new SurfaceViewPreview(context, this);
+      throw new RuntimeException("can't create preview. SDK version is too old. Build.VERSION.SDK_INT:: " + Build.VERSION.SDK_INT);
+    } else {
+      preview = new TextureViewPreview(context, this);
+    }
+    return preview;
+  }
+
   private GestureDetector.SimpleOnGestureListener onGestureListener = new GestureDetector.SimpleOnGestureListener(){
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
@@ -631,5 +863,35 @@ public class RNCameraView extends CameraView implements LifecycleEventListener, 
     }
 
   };
+
+  @SuppressWarnings("UnusedParameters")
+  public abstract static class Callback {
+
+    /**
+     * Called when camera is opened.
+     *
+     * @param cameraView The associated {@link RNCameraView}.
+     */
+    public void onCameraOpened(RNCameraView cameraView) {}
+
+    /**
+     * Called when camera is closed.
+     *
+     * @param cameraView The associated {@link RNCameraView}.
+     */
+    public void onCameraClosed(RNCameraView cameraView) {}
+
+    /**
+     * Called when a picture is taken.
+     *
+     * @param cameraView The associated {@link RNCameraView}.
+     * @param data       JPEG data.
+     */
+    public void onPictureTaken(RNCameraView cameraView, byte[] data, int deviceOrientation, int softwareRotation) {}
+
+    public void onFramePreview(RNCameraView cameraView, byte[] data, int width, int height, int orientation) {}
+
+    public void onMountError(RNCameraView cameraView) {}
+  }
 
 }

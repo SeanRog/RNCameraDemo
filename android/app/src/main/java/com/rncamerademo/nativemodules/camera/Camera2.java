@@ -628,6 +628,7 @@ class Camera2 {
     // to instantiate and set all its props in order to check if it is legacy or not
     // and then fallback to Camera1. This way, legacy devices can fall back to Camera1 right away
     // This method makes sure all cameras are not legacy, so further checks are not needed.
+    //TODO remove redundant
     public static boolean isLegacy(Context context){
         try{
             CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);

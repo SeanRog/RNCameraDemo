@@ -337,7 +337,7 @@ public class RNCameraViewHelper {
   // Utilities
 
   public static int getCorrectCameraRotation(int rotation, int facing, int cameraOrientation) {
-    if (facing == CameraView.FACING_FRONT) {
+    if (facing == RNCameraView.FACING_FRONT) {
       // Tested the below line and there's no need to do the mirror calculation
       return (cameraOrientation + rotation) % 360;
     } else {

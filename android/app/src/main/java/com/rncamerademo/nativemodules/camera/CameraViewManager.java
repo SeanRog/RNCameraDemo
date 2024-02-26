@@ -161,12 +161,6 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
     view.setShouldScanBarCodes(barCodeScannerEnabled);
   }
 
-  @ReactProp(name = "useCamera2Api")
-  public void setUseCamera2Api(RNCameraView view, boolean useCamera2Api) {
-    // view.setUsingCamera2Api(useCamera2Api);
-    view.setUsingCamera2Api(true);
-  }
-
   @ReactProp(name = "touchDetectorEnabled")
   public void setTouchDetectorEnabled(RNCameraView view, boolean touchDetectorEnabled) {
     view.setShouldDetectTouches(touchDetectorEnabled);

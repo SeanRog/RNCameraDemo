@@ -5,7 +5,7 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.google.mlkit.vision.face.Face;
 
-import com.rncamerademo.nativemodules.camera.CameraView;
+import com.rncamerademo.nativemodules.camera.RNCameraView;
 import com.rncamerademo.nativemodules.camera.RNFaceDetector;
 import com.rncamerademo.nativemodules.camera.utils.ImageDimensions;
 import com.rncamerademo.nativemodules.camera.utils.FaceDetectorUtils;
@@ -84,7 +84,7 @@ public class FaceDetectorAsyncTask extends android.os.AsyncTask<Void, Void, List
     for(int i = 0; i < faces.size(); i++) {
       Face face = faces.get(i);
       WritableMap serializedFace = FaceDetectorUtils.serializeFace(face, mScaleX, mScaleY, mWidth, mHeight, mPaddingLeft, mPaddingTop);
-      if (mImageDimensions.getFacing() == CameraView.FACING_FRONT) {
+      if (mImageDimensions.getFacing() == RNCameraView.FACING_FRONT) {
         serializedFace = FaceDetectorUtils.rotateFaceX(serializedFace, mImageDimensions.getWidth(), mScaleX);
       } else {
         serializedFace = FaceDetectorUtils.changeAnglesDirection(serializedFace);

@@ -17,7 +17,7 @@ import com.google.mlkit.vision.text.TextRecognizer;
 import com.google.mlkit.vision.text.TextRecognizerOptions;
 import com.google.mlkit.vision.text.TextRecognition;
 
-import com.rncamerademo.nativemodules.camera.CameraView;
+import com.rncamerademo.nativemodules.camera.RNCameraView;
 import com.rncamerademo.nativemodules.camera.utils.ImageDimensions;
 import com.rncamerademo.nativemodules.camera.utils.FaceDetectorUtils;
 import com.rncamerademo.nativemodules.camera.utils.RNFrame;
@@ -89,7 +89,7 @@ public class TextRecognizerAsyncTask extends android.os.AsyncTask<Void, Void, Li
       for (int i = 0; i < textBlocks.size(); ++i) {
         TextBlock textBlock = textBlocks.get(i);
         WritableMap serializedTextBlock = serializeText(textBlock);
-        if (mImageDimensions.getFacing() == CameraView.FACING_FRONT) {
+        if (mImageDimensions.getFacing() == RNCameraView.FACING_FRONT) {
           serializedTextBlock = rotateTextX(serializedTextBlock);
         }
         textBlocksList.pushMap(serializedTextBlock);
