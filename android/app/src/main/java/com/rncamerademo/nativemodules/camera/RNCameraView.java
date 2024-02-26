@@ -10,7 +10,6 @@ import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
-import android.media.CamcorderProfile;
 import android.os.Build;
 
 import androidx.annotation.IntDef;
@@ -37,11 +36,9 @@ import com.google.zxing.MultiFormatReader;
 import com.google.zxing.Result;
 
 import com.rncamerademo.nativemodules.camera.tasks.*;
-import com.rncamerademo.nativemodules.camera.utils.RNFileUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.*;
@@ -758,7 +755,7 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     return (int)(raw/ dm.density);
   }
 
-  private class CallbackBridge implements Camera2.Callback {
+  private class CallbackBridge implements RNCamCallback {
 
     private final ArrayList<Callback> mCallbacks = new ArrayList<>();
 
@@ -822,12 +819,7 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   @NonNull
   private TextureViewPreview createPreview(Context context) {
     TextureViewPreview preview;
-    if (Build.VERSION.SDK_INT < 14) {
-      // preview = new SurfaceViewPreview(context, this);
-      throw new RuntimeException("can't create preview. SDK version is too old. Build.VERSION.SDK_INT:: " + Build.VERSION.SDK_INT);
-    } else {
-      preview = new TextureViewPreview(context, this);
-    }
+    preview = new TextureViewPreview(context, this);
     return preview;
   }
 

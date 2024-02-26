@@ -225,6 +225,7 @@ type CameraViewProps = ViewProps & {
   rectOfInterest?: Rect, // limits scanning area
   cameraViewDimensions: CameraViewDimensions,
 	barCodeTypes?: BarcodeFormats[],
+	onCameraReady: ({ nativeEvent }: EventCallbackArgumentsType) => void,
   onBarCodeRead: ({ nativeEvent }: EventCallbackArgumentsType) => void,
   onFacesDetected: ({ nativeEvent }: EventCallbackArgumentsType) => void,
   onTextRecognized: ({ nativeEvent }: EventCallbackArgumentsType) => void,
@@ -252,6 +253,34 @@ if (!NativeModules.CameraModule) {
 }
 const CameraModule: CameraModuleProps = NativeModules.CameraModule;
 
+export const takePictureAsync = async (options?: PictureOptions) => {
+	if (!options) {
+		options = {};
+	}
+	if (!options.quality) {
+		options.quality = 1;
+	}
+
+	if (options.orientation) {
+		if (typeof options.orientation !== 'number') {
+			const { orientation } = options;
+			options.orientation = 1;
+			if (__DEV__) {
+				if (typeof options.orientation !== 'number') {
+					// eslint-disable-next-line no-console
+					console.warn(`Orientation '${orientation}' is invalid.`);
+				}
+			}
+		}
+	}
+
+	if (options.pauseAfterCapture === undefined) {
+		options.pauseAfterCapture = false;
+	}
+
+	return await CameraModule.takePictureAsync(options, 0);
+};
+
 const EventThrottleMs = 500;
 
 const RNCameraView = requireNativeComponent('RNCamera');
@@ -267,34 +296,6 @@ const Camera = (props: CameraViewProps) => {
       width: '100%',
     },
   });
-
-  const takePictureAsync = async (options?: PictureOptions) => {
-    if (!options) {
-      options = {};
-    }
-    if (!options.quality) {
-      options.quality = 1;
-    }
-
-    if (options.orientation) {
-      if (typeof options.orientation !== 'number') {
-        const { orientation } = options;
-        options.orientation = 1;
-        if (__DEV__) {
-          if (typeof options.orientation !== 'number') {
-            // eslint-disable-next-line no-console
-            console.warn(`Orientation '${orientation}' is invalid.`);
-          }
-        }
-      }
-    }
-
-    if (options.pauseAfterCapture === undefined) {
-      options.pauseAfterCapture = false;
-    }
-
-    return await CameraModule.takePictureAsync(options, 0);
-  };
 
   const getSupportedRatiosAsync = async () => {
     if (Platform.OS === 'android') {

@@ -32,8 +32,6 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.MeteringRectangle;
-import android.hardware.camera2.params.OutputConfiguration;
-import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
@@ -65,7 +63,7 @@ import java.util.SortedSet;
 class Camera2 {
 
     private static final String TAG = "rncameranativemodule";
-    protected final Callback mCallback;
+    protected final RNCamCallback mCallback;
     protected final TextureViewPreview mPreview;
     protected final Handler mBgHandler;
     private static final SparseIntArray INTERNAL_FACINGS = new SparseIntArray();
@@ -254,7 +252,7 @@ class Camera2 {
 
     private Rect mInitialCropRegion;
 
-    Camera2(Callback callback, TextureViewPreview preview, Context context, Handler bgHandler) {
+    Camera2(RNCamCallback callback, TextureViewPreview preview, Context context, Handler bgHandler) {
         mCallback = callback;
         mPreview = preview;
         mBgHandler = bgHandler;
@@ -1273,19 +1271,6 @@ class Camera2 {
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to restart camera preview.", e);
         }
-    }
-
-    interface Callback {
-
-        void onCameraOpened();
-
-        void onCameraClosed();
-
-        void onPictureTaken(byte[] data, int deviceOrientation, int softwareRotation);
-
-        void onFramePreview(byte[] data, int width, int height, int orientation);
-
-        void onMountError();
     }
 
     /**
