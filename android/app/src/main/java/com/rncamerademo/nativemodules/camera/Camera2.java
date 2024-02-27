@@ -113,23 +113,23 @@ class Camera2 {
 
     };
 
-    private final CameraCaptureSession.StateCallback mSessionCallback
+    private final CameraCaptureSession.StateCallback mCameraCaptureSessionCallback
             = new CameraCaptureSession.StateCallback() {
 
         public void onConfigured(@NonNull CameraCaptureSession session) {
             if (mCamera == null) {
                 return;
             }
-            mCaptureSession = session;
-            mInitialCropRegion = mPreviewRequestBuilder.get(CaptureRequest.SCALER_CROP_REGION);
+            mCameraCaptureSession = session;
+            mInitialCropRegion = mCaptureRequestBuilderForPreview.get(CaptureRequest.SCALER_CROP_REGION);
             updateAutoFocus();
             updateFlash();
             updateFocusDepth();
             updateWhiteBalance();
             updateZoom();
             try {
-                mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
-                        mCaptureCallback, null);
+                mCameraCaptureSession.setRepeatingRequest(mCaptureRequestBuilderForPreview.build(),
+                        mPictureCaptureCallback, null);
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Failed to start camera preview because it couldn't access camera", e);
             } catch (IllegalStateException e) {
@@ -142,22 +142,22 @@ class Camera2 {
         }
 
         public void onClosed(@NonNull CameraCaptureSession session) {
-            if (mCaptureSession != null && mCaptureSession.equals(session)) {
-                mCaptureSession = null;
+            if (mCameraCaptureSession != null && mCameraCaptureSession.equals(session)) {
+                mCameraCaptureSession = null;
             }
         }
 
     };
 
-    PictureCaptureCallback mCaptureCallback = new PictureCaptureCallback() {
+    PictureCaptureCallback mPictureCaptureCallback = new PictureCaptureCallback() {
 
         public void onPrecaptureRequired() {
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+            mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                     CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
             setState(STATE_PRECAPTURE);
             try {
-                mCaptureSession.capture(mPreviewRequestBuilder.build(), this, null);
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+                mCameraCaptureSession.capture(mCaptureRequestBuilderForPreview.build(), this, null);
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                         CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_IDLE);
             } catch (CameraAccessException e) {
                 Log.e(TAG, "Failed to run precapture sequence.", e);
@@ -202,9 +202,9 @@ class Camera2 {
 
     MediaActionSound sound = new MediaActionSound();
 
-    CameraCaptureSession mCaptureSession;
+    CameraCaptureSession mCameraCaptureSession;
 
-    CaptureRequest.Builder mPreviewRequestBuilder;
+    CaptureRequest.Builder mCaptureRequestBuilderForPreview;
 
     Set<String> mAvailableCameras = new HashSet<>();
 
@@ -300,9 +300,9 @@ class Camera2 {
     }
 
     void stop() {
-        if (mCaptureSession != null) {
-            mCaptureSession.close();
-            mCaptureSession = null;
+        if (mCameraCaptureSession != null) {
+            mCameraCaptureSession.close();
+            mCameraCaptureSession = null;
         }
         if (mCamera != null) {
             mCamera.close();
@@ -397,14 +397,14 @@ class Camera2 {
     }
 
     void setPictureSize(Size size) {
-        if (mCaptureSession != null) {
+        if (mCameraCaptureSession != null) {
             try {
-                mCaptureSession.stopRepeating();
+                mCameraCaptureSession.stopRepeating();
             } catch (CameraAccessException e) {
                 e.printStackTrace();
             }
-            mCaptureSession.close();
-            mCaptureSession = null;
+            mCameraCaptureSession.close();
+            mCameraCaptureSession = null;
         }
         if (mStillImageReader != null) {
             mStillImageReader.close();
@@ -438,9 +438,9 @@ class Camera2 {
         mAspectRatio = ratio;
         prepareStillImageReader();
         prepareScanImageReader();
-        if (mCaptureSession != null) {
-            mCaptureSession.close();
-            mCaptureSession = null;
+        if (mCameraCaptureSession != null) {
+            mCameraCaptureSession.close();
+            mCameraCaptureSession = null;
             startCaptureSession();
         }
         return true;
@@ -455,12 +455,12 @@ class Camera2 {
             return;
         }
         mAutoFocus = autoFocus;
-        if (mPreviewRequestBuilder != null) {
+        if (mCaptureRequestBuilderForPreview != null) {
             updateAutoFocus();
-            if (mCaptureSession != null) {
+            if (mCameraCaptureSession != null) {
                 try {
-                    mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
-                            mCaptureCallback, null);
+                    mCameraCaptureSession.setRepeatingRequest(mCaptureRequestBuilderForPreview.build(),
+                            mPictureCaptureCallback, null);
                 } catch (CameraAccessException e) {
                     mAutoFocus = !mAutoFocus; // Revert
                 }
@@ -478,12 +478,12 @@ class Camera2 {
         }
         int saved = mFlash;
         mFlash = flash;
-        if (mPreviewRequestBuilder != null) {
+        if (mCaptureRequestBuilderForPreview != null) {
             updateFlash();
-            if (mCaptureSession != null) {
+            if (mCameraCaptureSession != null) {
                 try {
-                    mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
-                            mCaptureCallback, null);
+                    mCameraCaptureSession.setRepeatingRequest(mCaptureRequestBuilderForPreview.build(),
+                            mPictureCaptureCallback, null);
                 } catch (CameraAccessException e) {
                     mFlash = saved; // Revert
                 }
@@ -497,7 +497,7 @@ class Camera2 {
 
 
     void takePicture(ReadableMap options) {
-        mCaptureCallback.setOptions(options);
+        mPictureCaptureCallback.setOptions(options);
 
         if (mAutoFocus) {
             lockFocus();
@@ -512,11 +512,11 @@ class Camera2 {
         }
         float saved = mFocusDepth;
         mFocusDepth = value;
-        if (mCaptureSession != null) {
+        if (mCameraCaptureSession != null) {
             updateFocusDepth();
             try {
-                mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
-                        mCaptureCallback, null);
+                mCameraCaptureSession.setRepeatingRequest(mCaptureRequestBuilderForPreview.build(),
+                        mPictureCaptureCallback, null);
             } catch (CameraAccessException e) {
                 mFocusDepth = saved;  // Revert
             }
@@ -533,11 +533,11 @@ class Camera2 {
       }
       float saved = mZoom;
       mZoom = zoom;
-      if (mCaptureSession != null) {
+      if (mCameraCaptureSession != null) {
           updateZoom();
           try {
-              mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
-                  mCaptureCallback, null);
+              mCameraCaptureSession.setRepeatingRequest(mCaptureRequestBuilderForPreview.build(),
+                      mPictureCaptureCallback, null);
           } catch (CameraAccessException e) {
               mZoom = saved;  // Revert
           }
@@ -554,11 +554,11 @@ class Camera2 {
         }
         int saved = mWhiteBalance;
         mWhiteBalance = whiteBalance;
-        if (mCaptureSession != null) {
+        if (mCameraCaptureSession != null) {
             updateWhiteBalance();
             try {
-                mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(),
-                    mCaptureCallback, null);
+                mCameraCaptureSession.setRepeatingRequest(mCaptureRequestBuilderForPreview.build(),
+                        mPictureCaptureCallback, null);
             } catch (CameraAccessException e) {
                 mWhiteBalance = saved;  // Revert
             }
@@ -595,9 +595,9 @@ class Camera2 {
         } else {
             mImageFormat = ImageFormat.YUV_420_888;
         }
-        if (mCaptureSession != null) {
-            mCaptureSession.close();
-            mCaptureSession = null;
+        if (mCameraCaptureSession != null) {
+            mCameraCaptureSession.close();
+            mCameraCaptureSession = null;
         }
         startCaptureSession();
     }
@@ -807,8 +807,8 @@ class Camera2 {
 
     /**
      * <p>Starts a capture session for camera preview.</p>
-     * <p>This rewrites {@link #mPreviewRequestBuilder}.</p>
-     * <p>The result will be continuously processed in {@link #mSessionCallback}.</p>
+     * <p>This rewrites {@link #mCaptureRequestBuilderForPreview}.</p>
+     * <p>The result will be continuously processed in {@link #mCameraCaptureSessionCallback}.</p>
      */
     void startCaptureSession() {
         if (!isCameraOpened() || !mPreview.isReady() || mStillImageReader == null || mScanImageReader == null) {
@@ -818,14 +818,14 @@ class Camera2 {
         mPreview.setBufferSize(previewSize.getWidth(), previewSize.getHeight());
         Surface surface = getPreviewSurface();
         try {
-            mPreviewRequestBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            mPreviewRequestBuilder.addTarget(surface);
+            mCaptureRequestBuilderForPreview = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mCaptureRequestBuilderForPreview.addTarget(surface);
 
             if (mIsScanning) {
-                mPreviewRequestBuilder.addTarget(mScanImageReader.getSurface());
+                mCaptureRequestBuilderForPreview.addTarget(mScanImageReader.getSurface());
             }
             mCamera.createCaptureSession(Arrays.asList(surface, mStillImageReader.getSurface(),
-                    mScanImageReader.getSurface()), mSessionCallback, null);
+                    mScanImageReader.getSurface()), mCameraCaptureSessionCallback, null);
 //            List<OutputConfiguration> outputConfigurations = Arrays.asList(
 //                    new OutputConfiguration(surface),
 //                    new OutputConfiguration(mStillImageReader.getSurface()),
@@ -848,7 +848,7 @@ class Camera2 {
 
     public void pausePreview() {
         try {
-            mCaptureSession.stopRepeating();
+            mCameraCaptureSession.stopRepeating();
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -874,9 +874,9 @@ class Camera2 {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                if (mCaptureSession != null) {
-                    mCaptureSession.close();
-                    mCaptureSession = null;
+                if (mCameraCaptureSession != null) {
+                    mCameraCaptureSession.close();
+                    mCameraCaptureSession = null;
                 }
                 startCaptureSession();
             }
@@ -926,14 +926,14 @@ class Camera2 {
             if (modes == null || modes.length == 0 ||
                     (modes.length == 1 && modes[0] == CameraCharacteristics.CONTROL_AF_MODE_OFF)) {
                 mAutoFocus = false;
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_MODE,
                         CaptureRequest.CONTROL_AF_MODE_OFF);
             } else {
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_MODE,
                         CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             }
         } else {
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+            mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_OFF);
         }
     }
@@ -944,33 +944,33 @@ class Camera2 {
     void updateFlash() {
         switch (mFlash) {
             case Constants.FLASH_OFF:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AE_MODE,
                         CaptureRequest.CONTROL_AE_MODE_ON);
-                mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.FLASH_MODE,
                         CaptureRequest.FLASH_MODE_OFF);
                 break;
             case Constants.FLASH_ON:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AE_MODE,
                         CaptureRequest.CONTROL_AE_MODE_ON_ALWAYS_FLASH);
-                mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.FLASH_MODE,
                         CaptureRequest.FLASH_MODE_OFF);
                 break;
             case Constants.FLASH_TORCH:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AE_MODE,
                         CaptureRequest.CONTROL_AE_MODE_ON);
-                mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.FLASH_MODE,
                         CaptureRequest.FLASH_MODE_TORCH);
                 break;
             case Constants.FLASH_AUTO:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AE_MODE,
                         CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-                mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.FLASH_MODE,
                         CaptureRequest.FLASH_MODE_OFF);
                 break;
             case Constants.FLASH_RED_EYE:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AE_MODE,
                         CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH_REDEYE);
-                mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.FLASH_MODE,
                         CaptureRequest.FLASH_MODE_OFF);
                 break;
         }
@@ -988,7 +988,7 @@ class Camera2 {
           throw new NullPointerException("Unexpected state: LENS_INFO_MINIMUM_FOCUS_DISTANCE null");
         }
         float value = mFocusDepth * minimumLens;
-        mPreviewRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, value);
+        mCaptureRequestBuilderForPreview.set(CaptureRequest.LENS_FOCUS_DISTANCE, value);
     }
 
     /**
@@ -1016,9 +1016,9 @@ class Camera2 {
             // ¯\_(ツ)_/¯ for some devices calculating the Rect for zoom=1 results in a bit different
             // Rect that device claims as its no-zoom crop region and the preview freezes
             if (scaledZoom != 1.0f) {
-                mPreviewRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoomedPreview);
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.SCALER_CROP_REGION, zoomedPreview);
             } else {
-                mPreviewRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, mInitialCropRegion);
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.SCALER_CROP_REGION, mInitialCropRegion);
             }
         }
     }
@@ -1029,27 +1029,27 @@ class Camera2 {
     void updateWhiteBalance() {
         switch (mWhiteBalance) {
             case Constants.WB_AUTO:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AWB_MODE,
                     CaptureRequest.CONTROL_AWB_MODE_AUTO);
                 break;
             case Constants.WB_CLOUDY:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AWB_MODE,
                     CaptureRequest.CONTROL_AWB_MODE_CLOUDY_DAYLIGHT);
                 break;
             case Constants.WB_FLUORESCENT:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AWB_MODE,
                     CaptureRequest.CONTROL_AWB_MODE_FLUORESCENT);
                 break;
             case Constants.WB_INCANDESCENT:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AWB_MODE,
                     CaptureRequest.CONTROL_AWB_MODE_INCANDESCENT);
                 break;
             case Constants.WB_SHADOW:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AWB_MODE,
                     CaptureRequest.CONTROL_AWB_MODE_SHADE);
                 break;
             case Constants.WB_SUNNY:
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AWB_MODE,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AWB_MODE,
                     CaptureRequest.CONTROL_AWB_MODE_DAYLIGHT);
                 break;
         }
@@ -1059,11 +1059,11 @@ class Camera2 {
      * Locks the focus as the first step for a still image capture.
      */
     private void lockFocus() {
-        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+        mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_TRIGGER,
                 CaptureRequest.CONTROL_AF_TRIGGER_START);
         try {
-            mCaptureCallback.setState(PictureCaptureCallback.STATE_LOCKING);
-            mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback, null);
+            mPictureCaptureCallback.setState(PictureCaptureCallback.STATE_LOCKING);
+            mCameraCaptureSession.capture(mCaptureRequestBuilderForPreview.build(), mPictureCaptureCallback, null);
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to lock focus.", e);
         }
@@ -1076,7 +1076,7 @@ class Camera2 {
 
     // Much credit - https://gist.github.com/royshil/8c760c2485257c85a11cafd958548482
     void setFocusArea(float x, float y) {
-        if (mCaptureSession == null) {
+        if (mCameraCaptureSession == null) {
             return;
         }
         CameraCaptureSession.CaptureCallback captureCallbackHandler = new CameraCaptureSession.CaptureCallback() {
@@ -1085,9 +1085,9 @@ class Camera2 {
                 super.onCaptureCompleted(session, request, result);
 
                 if (request.getTag() == "FOCUS_TAG") {
-                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
+                    mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
                     try {
-                        mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), null, null);
+                        mCameraCaptureSession.setRepeatingRequest(mCaptureRequestBuilderForPreview.build(), null, null);
                     } catch (CameraAccessException e) {
                         Log.e(TAG, "Failed to manual focus.", e);
                     }
@@ -1102,30 +1102,30 @@ class Camera2 {
         };
 
         try {
-            mCaptureSession.stopRepeating();
+            mCameraCaptureSession.stopRepeating();
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to manual focus.", e);
         }
 
-        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+        mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+        mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
         try {
-            mCaptureSession.capture(mPreviewRequestBuilder.build(), captureCallbackHandler, null);
+            mCameraCaptureSession.capture(mCaptureRequestBuilderForPreview.build(), captureCallbackHandler, null);
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to manual focus.", e);
         }
 
         if (isMeteringAreaAFSupported()) {
             MeteringRectangle focusAreaTouch = calculateFocusArea(x, y);
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, new MeteringRectangle[]{focusAreaTouch});
+            mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_REGIONS, new MeteringRectangle[]{focusAreaTouch});
         }
-        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
-        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
-        mPreviewRequestBuilder.setTag("FOCUS_TAG");
+        mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+        mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+        mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
+        mCaptureRequestBuilderForPreview.setTag("FOCUS_TAG");
 
         try {
-            mCaptureSession.capture(mPreviewRequestBuilder.build(), captureCallbackHandler, null);
+            mCameraCaptureSession.capture(mCaptureRequestBuilderForPreview.build(), captureCallbackHandler, null);
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to manual focus.", e);
         }
@@ -1165,7 +1165,7 @@ class Camera2 {
             }
             captureRequestBuilder.addTarget(mStillImageReader.getSurface());
             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                    mPreviewRequestBuilder.get(CaptureRequest.CONTROL_AF_MODE));
+                    mCaptureRequestBuilderForPreview.get(CaptureRequest.CONTROL_AF_MODE));
             switch (mFlash) {
                 case Constants.FLASH_OFF:
                     captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
@@ -1195,22 +1195,22 @@ class Camera2 {
             captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOutputRotation());
 
 
-            if(mCaptureCallback.getOptions().hasKey("quality")){
-                int quality = (int) (mCaptureCallback.getOptions().getDouble("quality") * 100);
+            if(mPictureCaptureCallback.getOptions().hasKey("quality")){
+                int quality = (int) (mPictureCaptureCallback.getOptions().getDouble("quality") * 100);
                 captureRequestBuilder.set(CaptureRequest.JPEG_QUALITY, (byte)quality);
             }
 
-            captureRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, mPreviewRequestBuilder.get(CaptureRequest.SCALER_CROP_REGION));
+            captureRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, mCaptureRequestBuilderForPreview.get(CaptureRequest.SCALER_CROP_REGION));
             // Stop preview and capture a still picture.
-            mCaptureSession.stopRepeating();
-            mCaptureSession.capture(captureRequestBuilder.build(),
+            mCameraCaptureSession.stopRepeating();
+            mCameraCaptureSession.capture(captureRequestBuilder.build(),
                     new CameraCaptureSession.CaptureCallback() {
                         @Override
                         public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                 @NonNull CaptureRequest request,
                                 @NonNull TotalCaptureResult result) {
-                            if (mCaptureCallback.getOptions().hasKey("pauseAfterCapture")
-                              && !mCaptureCallback.getOptions().getBoolean("pauseAfterCapture")) {
+                            if (mPictureCaptureCallback.getOptions().hasKey("pauseAfterCapture")
+                              && !mPictureCaptureCallback.getOptions().getBoolean("pauseAfterCapture")) {
                                 unlockFocus();
                             }
                             if (mPlaySoundOnCapture) {
@@ -1252,21 +1252,21 @@ class Camera2 {
      * capturing a still picture.
      */
     void unlockFocus() {
-        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+        mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_TRIGGER,
                 CaptureRequest.CONTROL_AF_TRIGGER_CANCEL);
         try {
-            mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback, null);
+            mCameraCaptureSession.capture(mCaptureRequestBuilderForPreview.build(), mPictureCaptureCallback, null);
             updateAutoFocus();
             updateFlash();
             if (mIsScanning) {
                 mImageFormat = ImageFormat.YUV_420_888;
                 startCaptureSession();
             } else {
-                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                mCaptureRequestBuilderForPreview.set(CaptureRequest.CONTROL_AF_TRIGGER,
                         CaptureRequest.CONTROL_AF_TRIGGER_IDLE);
-                mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback,
+                mCameraCaptureSession.setRepeatingRequest(mCaptureRequestBuilderForPreview.build(), mPictureCaptureCallback,
                         null);
-                mCaptureCallback.setState(PictureCaptureCallback.STATE_PREVIEW);
+                mPictureCaptureCallback.setState(PictureCaptureCallback.STATE_PREVIEW);
             }
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to restart camera preview.", e);

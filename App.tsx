@@ -19,15 +19,15 @@ export default function App() {
 				zoom={0}
 				useNativeZoom={false}
 				barCodeScannerEnabled={false}
-				googleVisionBarcodeDetectorEnabled={true}
-				faceDetectorEnabled={false}
-				faceDetectionMode={0}
+				googleVisionBarcodeDetectorEnabled={false}
+				faceDetectorEnabled={true}
+				faceDetectionMode={1}
 				barCodeTypes={['code39', 'code93', 'code128', 'qr']}
 				onCameraReady={() => {
 					console.log('camera ready');
 				}}
-				faceDetectionLandmarks={0}
-				faceDetectionClassifications={0}
+				faceDetectionLandmarks={1}
+				faceDetectionClassifications={1}
 				trackingEnabled={true}
 				textRecognizerEnabled={false}
 				cameraViewDimensions={{

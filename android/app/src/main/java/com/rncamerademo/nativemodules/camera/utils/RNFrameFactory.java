@@ -1,10 +1,12 @@
 package com.rncamerademo.nativemodules.camera.utils;
 
 import android.graphics.Bitmap;
+import android.util.Log;
 
 import com.google.mlkit.vision.common.InputImage;
 
 import java.nio.ByteBuffer;
+import java.util.Base64;
 
 public class RNFrameFactory {
   public static RNFrame buildFrame(byte[] bitmapData, int width, int height, int rotation) {

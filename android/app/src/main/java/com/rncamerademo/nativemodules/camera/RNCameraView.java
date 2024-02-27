@@ -197,6 +197,7 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
       }
 
       public void onFramePreview(RNCameraView cameraView, byte[] data, int width, int height, int rotation) {
+//        Log.d(TAG, "rotation:: " + rotation);
         int correctRotation = RNCameraViewHelper.getCorrectCameraRotation(rotation, mCamera2.getFacing(), mCamera2.getCameraOrientation());
         boolean willCallBarCodeTask = mShouldScanBarCodes && !barCodeScannerTaskLock && cameraView instanceof BarCodeScannerAsyncTaskDelegate;
         boolean willCallFaceTask = mShouldDetectFaces && !faceDetectorTaskLock && cameraView instanceof FaceDetectorAsyncTaskDelegate;
@@ -382,22 +383,19 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   }
 
   public void takePicture(final ReadableMap options, final Promise promise, final File cacheDirectory) {
-    mBgHandler.post(new Runnable() {
-      @Override
-      public void run() {
-        mPictureTakenPromises.add(promise);
-        mPictureTakenOptions.put(promise, options);
-        mPictureTakenDirectories.put(promise, cacheDirectory);
+    mBgHandler.post(() -> {
+      mPictureTakenPromises.add(promise);
+      mPictureTakenOptions.put(promise, options);
+      mPictureTakenDirectories.put(promise, cacheDirectory);
 
-        try {
-          mCamera2.takePicture(options);
-        } catch (Exception e) {
-          mPictureTakenPromises.remove(promise);
-          mPictureTakenOptions.remove(promise);
-          mPictureTakenDirectories.remove(promise);
+      try {
+        mCamera2.takePicture(options);
+      } catch (Exception e) {
+        mPictureTakenPromises.remove(promise);
+        mPictureTakenOptions.remove(promise);
+        mPictureTakenDirectories.remove(promise);
 
-          promise.reject("E_TAKE_PICTURE_FAILED", e.getMessage());
-        }
+        promise.reject("E_TAKE_PICTURE_FAILED", e.getMessage());
       }
     });
   }
