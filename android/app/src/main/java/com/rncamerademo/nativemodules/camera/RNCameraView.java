@@ -88,7 +88,7 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
   private boolean mAdjustViewBounds;
 
-  private ThemedReactContext mThemedReactContext;
+  private ReactContext mThemedReactContext;
 
   private final DisplayOrientationDetector mDisplayOrientationDetector;
 
@@ -144,7 +144,9 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   private int mCameraViewWidth = 0;
   private int mCameraViewHeight = 0;
 
-  public RNCameraView(ThemedReactContext themedReactContext) {
+  private static RNCameraView rnCameraView;
+
+  public RNCameraView(ReactContext themedReactContext) {
     super(themedReactContext, null, 0);
     mThemedReactContext = themedReactContext;
     themedReactContext.addLifecycleEventListener(this);
@@ -247,6 +249,13 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
         }
       }
     });
+  }
+
+  public static RNCameraView getInstance(ReactContext themedReactContext) {
+    if (rnCameraView == null) {
+      rnCameraView = new RNCameraView(themedReactContext);
+    }
+    return rnCameraView;
   }
 
   public SortedSet<Size> getAvailablePictureSizes(@NonNull AspectRatio ratio) {
@@ -726,6 +735,7 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
       mBgThread.quitSafely();
       mBgThread = null;
     }
+    rnCameraView = null;
   }
 
   private void onZoom(float scale){

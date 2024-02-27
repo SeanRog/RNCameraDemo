@@ -7,6 +7,8 @@ import {
   requireNativeComponent,
   View,
   StyleSheet,
+	findNodeHandle,
+	HostComponent,
 } from 'react-native';
 
 type Orientation = 'auto' | 'landscapeLeft' | 'landscapeRight' | 'portrait' | 'portraitUpsideDown';
@@ -232,9 +234,9 @@ type CameraViewProps = ViewProps & {
 };
 
 type CameraModuleProps = {
-  takePictureAsync: (options: PictureOptions, viewTag: number) => Promise<any>, // refactor any type
-  getSupportedRatios: (viewTag: number) => Promise<string[]>,
-  getCameraIds: (viewTag: number) => Promise<CameraIds>,
+  takePictureAsync: (options: PictureOptions) => Promise<any>, // refactor any type
+  getSupportedRatios: () => Promise<string[]>,
+  getCameraIds: () => Promise<CameraIds>,
   hasTorch: () => Promise<boolean>,
 }
 
@@ -253,7 +255,7 @@ if (!NativeModules.CameraModule) {
 }
 const CameraModule: CameraModuleProps = NativeModules.CameraModule;
 
-export const takePictureAsync = async (options?: PictureOptions) => {
+export const takePictureAsync = async (options: PictureOptions) => {
 	if (!options) {
 		options = {};
 	}
@@ -278,12 +280,18 @@ export const takePictureAsync = async (options?: PictureOptions) => {
 		options.pauseAfterCapture = false;
 	}
 
-	return await CameraModule.takePictureAsync(options, 0);
+	return await CameraModule.takePictureAsync(options);
 };
 
 const EventThrottleMs = 500;
+let RNCameraView: HostComponent<unknown> | string;
 
-const RNCameraView = requireNativeComponent('RNCamera');
+try {
+	RNCameraView = requireNativeComponent('RNCamera');
+} catch (e) {
+	console.log(e);
+	RNCameraView = 'RNCamera';
+}
 
 const Camera = (props: CameraViewProps) => {
   const _lastEvents: { [event: string]: string } = {};
@@ -299,14 +307,14 @@ const Camera = (props: CameraViewProps) => {
 
   const getSupportedRatiosAsync = async () => {
     if (Platform.OS === 'android') {
-      return await CameraModule.getSupportedRatios(0);
+      return await CameraModule.getSupportedRatios();
     } else {
       throw new Error('Ratio is not supported on iOS');
     }
   };
 
   const getCameraIdsAsync = async () => {
-    return await CameraModule.getCameraIds(0); // refactor remove paramater
+    return await CameraModule.getCameraIds();
   };
 
   // refactor

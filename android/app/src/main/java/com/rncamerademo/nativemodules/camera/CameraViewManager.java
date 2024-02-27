@@ -1,5 +1,7 @@
 package com.rncamerademo.nativemodules.camera;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 
 import com.facebook.react.bridge.ReadableArray;
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class CameraViewManager extends ViewGroupManager<RNCameraView> {
+  private String TAG = "rncamerademo";
   public enum Events {
     EVENT_CAMERA_READY("onCameraReady"),
     EVENT_ON_MOUNT_ERROR("onMountError"),
@@ -46,6 +49,7 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
 
   @Override
   public void onDropViewInstance(RNCameraView view) {
+    view.removeView(view);
     view.onHostDestroy();
     super.onDropViewInstance(view);
   }
@@ -58,7 +62,10 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
 
   @Override
   protected RNCameraView createViewInstance(ThemedReactContext themedReactContext) {
-    return new RNCameraView(themedReactContext);
+    Log.d(TAG, "create view instance");
+    RNCameraView instance =  RNCameraView.getInstance(themedReactContext);
+    Log.d(TAG, "end create view instance");
+    return instance;
   }
 
   @Override

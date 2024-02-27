@@ -62,8 +62,8 @@ public class RNBarcodeDetector {
             createBarcodeDetector();
             mPreviousDimensions = frame.getDimensions();
         }
-        Log.d(TAG, "detecting");
-        Log.d(TAG, "frame dimensions:: " + frame.getDimensions().getWidth() + " " + frame.getDimensions().getHeight());
+//        Log.d(TAG, "detecting");
+//        Log.d(TAG, "frame dimensions:: " + frame.getDimensions().getWidth() + " " + frame.getDimensions().getHeight());
         Task<List<Barcode>> detectBarcodesTask = mBarcodeDetector.process(frame.getFrame());
         handleBarcodeDetectionTask(detectBarcodesTask);
 //        mIsDetecting = false;
@@ -75,22 +75,22 @@ public class RNBarcodeDetector {
         detectBarcodesTask.addOnCompleteListener(completedTask -> {
             mIsDetecting = false;
             List<Barcode> barcodesResult = completedTask.getResult();
-            Log.d(TAG, "completed. barcodesResult.size():: " + barcodesResult.size());
+//            Log.d(TAG, "completed. barcodesResult.size():: " + barcodesResult.size());
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 barcodesResult.forEach(barcode -> {
                     Log.d(TAG, barcode.getRawValue());
                 });
             }
         });
-        detectBarcodesTask.addOnCanceledListener(() -> {
-           Log.d(TAG, "canceled");
-        });
-        detectBarcodesTask.addOnFailureListener((exception) -> {
-            Log.d(TAG, "failed. exception.message:: " + exception.getMessage());
-        });
-        detectBarcodesTask.addOnSuccessListener((barcodeList) -> {
-            Log.d(TAG, "success. barcodesResult.size():: " + barcodeList.size());
-        });
+//        detectBarcodesTask.addOnCanceledListener(() -> {
+//           Log.d(TAG, "canceled");
+//        });
+//        detectBarcodesTask.addOnFailureListener((exception) -> {
+//            Log.d(TAG, "failed. exception.message:: " + exception.getMessage());
+//        });
+//        detectBarcodesTask.addOnSuccessListener((barcodeList) -> {
+//            Log.d(TAG, "success. barcodesResult.size():: " + barcodeList.size());
+//        });
     }
 
     public void setBarcodeType(int barcodeType) {

@@ -1,13 +1,15 @@
 import React from 'react';
-import {Button, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
-import RNCamera, {takePictureAsync} from './src/RNCamera';
+import {Button, Image, View, useWindowDimensions} from 'react-native';
+import Camera, {takePictureAsync} from './src/RNCamera';
 
 export default function App() {
 	const {width: screenWidth, height: screenHeight} = useWindowDimensions();
+
+	
   return (
-    <View style={{width: '100%', height: '100%', backgroundColor: 'purple'}}>
+    <View ref={undefined} style={{width: '100%', height: '100%', backgroundColor: 'purple'}}>
 			<Button title='click me' onPress={async () => console.log(await takePictureAsync())}></Button>
-      <RNCamera
+      <Camera
 				style={{ height: '100%', width: '100%' }}
 				type={0}
 				camerId={'0'}
@@ -21,8 +23,8 @@ export default function App() {
 				faceDetectorEnabled={false}
 				faceDetectionMode={0}
 				barCodeTypes={['code39', 'code93', 'code128', 'qr']}
-				onCameraReady={(e) => {
-					console.log('camera ready event:: ', e);
+				onCameraReady={() => {
+					console.log('camera ready');
 				}}
 				faceDetectionLandmarks={0}
 				faceDetectionClassifications={0}
@@ -41,6 +43,8 @@ export default function App() {
 				onTextRecognized={function ({ nativeEvent }: { nativeEvent: any; }): void {
 					console.log('onTextRecognized:: ', nativeEvent);
 				}} />
+				{/* <Image style={{width: 400, height: 400}} src='file:///data/user/0/com.rncamerademo/cache/Camera/2f874763-9978-4828-a57b-84ad7de583bc.jpg'></Image> */}
+
 				{/* <TouchableOpacity
 					onPress={() => console.log('take picture pressed')}
 					style={{position: 'absolute', top: 0, width: 200, height: 50, backgroundColor: 'blue'}}>

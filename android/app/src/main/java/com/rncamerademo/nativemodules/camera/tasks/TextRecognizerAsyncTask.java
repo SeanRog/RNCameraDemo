@@ -4,6 +4,7 @@ import android.graphics.Rect;
 import android.util.SparseArray;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableArray;
@@ -29,7 +30,7 @@ import java.util.List;
 public class TextRecognizerAsyncTask extends android.os.AsyncTask<Void, Void, List<TextBlock>> {
 
   private TextRecognizerAsyncTaskDelegate mDelegate;
-  private ThemedReactContext mThemedReactContext;
+  private ReactContext mThemedReactContext;
   private TextRecognizer mTextRecognizer;
   private byte[] mImageData;
   private int mWidth;
@@ -43,7 +44,7 @@ public class TextRecognizerAsyncTask extends android.os.AsyncTask<Void, Void, Li
 
   public TextRecognizerAsyncTask(
           TextRecognizerAsyncTaskDelegate delegate,
-          ThemedReactContext themedReactContext,
+          ReactContext themedReactContext,
           byte[] imageData,
           int width,
           int height,
