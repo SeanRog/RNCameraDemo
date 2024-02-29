@@ -16,6 +16,12 @@ public class RNFrameFactory {
     return new RNFrame(image, dimensions);
   }
 
+  public static RNFrame buildFrame(android.media.Image image, int width, int height, int rotation) {
+    InputImage inputImage = InputImage.fromMediaImage(image, rotation);
+    ImageDimensions dimensions = new ImageDimensions(width, height, rotation);
+    return new RNFrame(inputImage, dimensions);
+  }
+
   public static RNFrame buildFrame(Bitmap bitmap) {
     ImageDimensions dimensions = new ImageDimensions(bitmap.getWidth(), bitmap.getHeight());
     InputImage image = InputImage.fromBitmap(bitmap, 0);

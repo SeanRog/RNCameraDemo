@@ -1,5 +1,6 @@
 package com.rncamerademo
 
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 
@@ -24,6 +25,10 @@ class MainActivity : ReactActivity() {
    * rendering of the component.
    */
   override fun getMainComponentName(): String = "main"
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+    }
 
   /**
    * Returns the instance of the [ReactActivityDelegate]. We use [DefaultReactActivityDelegate]

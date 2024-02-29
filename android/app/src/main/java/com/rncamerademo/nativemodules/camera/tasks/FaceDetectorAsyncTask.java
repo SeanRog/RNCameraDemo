@@ -1,5 +1,6 @@
 package com.rncamerademo.nativemodules.camera.tasks;
 
+import android.media.Image;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
@@ -18,7 +19,7 @@ import java.util.List;
 
 public class FaceDetectorAsyncTask extends android.os.AsyncTask<Void, Void, List<Face>> {
   private static String TAG = "FaceDetectorAsyncTask";
-  private byte[] mImageData;
+  private Image mImage;
   private int mWidth;
   private int mHeight;
   private int mRotation;
@@ -33,7 +34,7 @@ public class FaceDetectorAsyncTask extends android.os.AsyncTask<Void, Void, List
   public FaceDetectorAsyncTask(
       FaceDetectorAsyncTaskDelegate delegate,
       RNFaceDetector faceDetector,
-      byte[] imageData,
+      Image image,
       int width,
       int height,
       int rotation,
@@ -44,7 +45,7 @@ public class FaceDetectorAsyncTask extends android.os.AsyncTask<Void, Void, List
       int viewPaddingLeft,
       int viewPaddingTop
   ) {
-    mImageData = imageData;
+    mImage = image;
     mWidth = width;
     mHeight = height;
     mRotation = rotation;
@@ -63,7 +64,7 @@ public class FaceDetectorAsyncTask extends android.os.AsyncTask<Void, Void, List
       return null;
     }
 
-    RNFrame frame = RNFrameFactory.buildFrame(mImageData, mWidth, mHeight, mRotation);
+    RNFrame frame = RNFrameFactory.buildFrame(mImage, mWidth, mHeight, mRotation);
 //    Log.d(TAG, "mRotation:: " + mRotation);
     return mFaceDetector.detect(frame);
   }

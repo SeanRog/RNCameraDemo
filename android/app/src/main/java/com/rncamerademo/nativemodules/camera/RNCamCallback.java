@@ -1,5 +1,7 @@
 package com.rncamerademo.nativemodules.camera;
 
+import android.media.Image;
+
 public interface RNCamCallback {
     void onCameraOpened();
 
@@ -7,7 +9,7 @@ public interface RNCamCallback {
 
     void onPictureTaken(byte[] data, int deviceOrientation, int softwareRotation);
 
-    void onFramePreview(byte[] data, int width, int height, int orientation);
+    void onFramePreview(Image image, int width, int height, int orientation);
 
     void onMountError();
 }

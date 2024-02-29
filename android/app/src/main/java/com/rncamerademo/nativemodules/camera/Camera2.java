@@ -46,6 +46,20 @@ import android.view.View;
 
 import com.facebook.react.bridge.ReadableMap;
 
+import com.google.android.gms.tasks.Task;
+import com.google.mlkit.vision.barcode.Barcode;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.face.Face;
+import com.google.mlkit.vision.face.FaceDetection;
+import com.google.mlkit.vision.face.FaceDetector;
+import com.google.mlkit.vision.face.FaceDetectorOptions;
+import com.google.mlkit.vision.text.Text;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.TextRecognizer;
+import com.google.mlkit.vision.text.TextRecognizerOptions;
 import com.rncamerademo.nativemodules.camera.utils.ObjectUtils;
 
 import java.nio.ByteBuffer;
@@ -67,6 +81,19 @@ class Camera2 {
     protected final TextureViewPreview mPreview;
     protected final Handler mBgHandler;
     private static final SparseIntArray INTERNAL_FACINGS = new SparseIntArray();
+    private FaceDetectorOptions faceDetectorOptions = new FaceDetectorOptions.Builder()
+            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+            .setContourMode(FaceDetectorOptions.CONTOUR_MODE_NONE)
+            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
+            .setMinFaceSize(0.55f)
+            .build();
+    private FaceDetector mFaceDetector = FaceDetection.getClient(faceDetectorOptions);
+    private BarcodeScannerOptions barcodeScannerOptions = new BarcodeScannerOptions.Builder()
+            .build();
+    private BarcodeScanner mBarcodeScanner = BarcodeScanning.getClient(barcodeScannerOptions);
+    private TextRecognizerOptions textRecognizerOptions = new TextRecognizerOptions.Builder()
+            .build();
+    private TextRecognizer mTextRecognizer = TextRecognition.getClient(textRecognizerOptions);
 
     static {
         INTERNAL_FACINGS.put(Constants.FACING_BACK, CameraCharacteristics.LENS_FACING_BACK);
@@ -173,24 +200,65 @@ class Camera2 {
     private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
             = new ImageReader.OnImageAvailableListener() {
 
+        @Override
         public void onImageAvailable(ImageReader reader) {
-            try (Image image = reader.acquireNextImage()) {
-                Image.Plane[] planes = image.getPlanes();
-                if (planes.length > 0) {
-                    ByteBuffer buffer = planes[0].getBuffer();
-                    byte[] data = new byte[buffer.remaining()];
-                    buffer.get(data);
-                    if (image.getFormat() == ImageFormat.JPEG) {
-                        // @TODO: implement deviceOrientation
-                        mCallback.onPictureTaken(data, 0, 0);
-                    } else {
-                        mCallback.onFramePreview(data, image.getWidth(), image.getHeight(), mDisplayOrientation);
-                    }
+            Image image = reader.acquireNextImage();
+            Image.Plane[] planes = image.getPlanes();
+            if (planes.length > 0) {
+                ByteBuffer buffer = planes[0].getBuffer();
+                byte[] data = new byte[buffer.remaining()];
+                buffer.get(data);
+                if (image.getFormat() == ImageFormat.JPEG) {
+                    // @TODO: implement deviceOrientation
+                    mCallback.onPictureTaken(data, 0, 0);
+                } else {
+//                        mCallback.onFramePreview(data, image.getWidth(), image.getHeight(), mDisplayOrientation);
+//                    mCallback.onFramePreview(image, image.getWidth(), image.getHeight(), mDisplayOrientation);
                 }
             }
+            detectFaces(image);
+            detectBarcodes(image);
+            detectText(image);
+            image.close();
         }
 
     };
+
+    private void detectFaces(android.media.Image image) {
+        InputImage inputImage = InputImage.fromMediaImage(image, 90);
+        Task<List<Face>> detectFacetask = mFaceDetector.process(inputImage);
+        detectFacetask.addOnSuccessListener(faces -> {
+            if (faces.size() > 0) {
+                Rect rect = faces.get(0).getBoundingBox();
+                Log.d(TAG, "rect.width():: " + rect.width());
+                Log.d(TAG, "rect.height():: " + rect.height());
+                Log.d(TAG, "rect.centerX():: " + rect.centerX());
+                Log.d(TAG, "rect.centerY():: " + rect.centerY());
+            }
+
+        });
+    }
+
+    private void detectBarcodes(android.media.Image image) {
+        InputImage inputImage = InputImage.fromMediaImage(image, 90);
+        Task<List<Barcode>> detectBarcodeTask = mBarcodeScanner.process(inputImage);
+        detectBarcodeTask.addOnSuccessListener(barcodes -> {
+            Log.d(TAG, "barcodes.size():: " + barcodes.size());
+            if (barcodes.size() > 0) {
+                Log.d(TAG, "barcodes" + barcodes.get(0).getRawValue());
+            }
+        });
+    }
+
+    private void detectText(android.media.Image image) {
+        InputImage inputImage = InputImage.fromMediaImage(image, 90);
+        Task<Text> detectTextTask = mTextRecognizer.process(inputImage);
+        detectTextTask.addOnSuccessListener(text -> {
+            Log.d(TAG, "text recognized:: " + text.getText());
+        });
+    }
+
+
 
 
     private String mCameraId;
