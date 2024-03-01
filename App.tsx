@@ -15,7 +15,6 @@ export default function App() {
 				flashMode={0}
 				autoFocus={true}
 				zoom={0}
-				useNativeZoom={false}
 				barCodeScannerEnabled={true}
 				googleVisionBarcodeDetectorEnabled={false}
 				faceDetectorEnabled={true}

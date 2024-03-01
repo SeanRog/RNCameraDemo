@@ -121,11 +121,6 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
   public void setZoom(RNCameraView view, float zoom) {
     view.setZoom(zoom);
   }
-
-  @ReactProp(name = "useNativeZoom")
-  public void setUseNativeZoom(RNCameraView view, boolean useNativeZoom) {
-    view.setUseNativeZoom(useNativeZoom);
-  }
   @ReactProp(name = "whiteBalance")
   public void setWhiteBalance(RNCameraView view, int whiteBalance) {
     view.setWhiteBalance(whiteBalance);
@@ -134,11 +129,6 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
   @ReactProp(name = "pictureSize")
   public void setPictureSize(RNCameraView view, String size) {
     view.setPictureSize(size.equals("None") ? null : Size.parse(size));
-  }
-
-  @ReactProp(name = "touchDetectorEnabled")
-  public void setTouchDetectorEnabled(RNCameraView view, boolean touchDetectorEnabled) {
-    view.setShouldDetectTouches(touchDetectorEnabled);
   }
 
   @ReactProp(name = "faceDetectionMode")

@@ -162,35 +162,6 @@ public class RNCameraViewHelper {
   // Run all events on native modules queue thread since they might be fired
   // from other non RN threads.
 
-
-  // Mount error event
-
-  public static void emitMountErrorEvent(final ViewGroup view, final String error) {
-
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        CameraMountErrorEvent event = CameraMountErrorEvent.obtain(view.getId(), error);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-    });
-  }
-
-  // Camera ready event
-
-  public static void emitCameraReadyEvent(final ViewGroup view) {
-
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        CameraReadyEvent event = CameraReadyEvent.obtain(view.getId());
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-    });
-  }
-
   // Picture saved event
 
   public static void emitPictureSavedEvent(final ViewGroup view, final WritableMap response) {
@@ -219,86 +190,8 @@ public class RNCameraViewHelper {
       }
      });
   }
-  // Touch event
-  public static void emitTouchEvent(final ViewGroup view, final boolean isDoubleTap, final int x, final int y) {
-
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        TouchEvent event = TouchEvent.obtain(view.getId(), isDoubleTap, x, y);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-    });
-
-  }
-  // Face detection events
-
-  public static void emitFacesDetectedEvent(final ViewGroup view, final WritableArray data) {
-
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        FacesDetectedEvent event = FacesDetectedEvent.obtain(view.getId(), data);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-     });
-  }
-
-  public static void emitFaceDetectionErrorEvent(final ViewGroup view, final RNFaceDetector faceDetector) {
-
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        FaceDetectionErrorEvent event = FaceDetectionErrorEvent.obtain(view.getId(), faceDetector);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-    });
-  }
-
-  public static void emitBarcodeDetectionErrorEvent(final ViewGroup view, final RNBarcodeDetector barcodeDetector) {
-
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        BarcodeDetectionErrorEvent event = BarcodeDetectionErrorEvent.obtain(view.getId(), barcodeDetector);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-    });
-  }
-
-  // Text recognition event
-
-  public static void emitTextRecognizedEvent(final ViewGroup view, final WritableArray data) {
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        TextRecognizedEvent event = TextRecognizedEvent.obtain(view.getId(), data);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-    });
-  }
 
   // Utilities
-
-  public static int getCorrectCameraRotation(int rotation, int facing, int cameraOrientation) {
-    if (facing == RNCameraView.FACING_FRONT) {
-      // Tested the below line and there's no need to do the mirror calculation
-      return (cameraOrientation + rotation) % 360;
-    } else {
-      final int landscapeFlip = rotationIsLandscape(rotation) ? 180 : 0;
-      return (cameraOrientation - rotation + landscapeFlip) % 360;
-    }
-  }
-
-  private static boolean rotationIsLandscape(int rotation) {
-    return (rotation == Constants.LANDSCAPE_90 ||
-            rotation == Constants.LANDSCAPE_270);
-  }
 
   public static WritableMap getExifData(ExifInterface exifInterface) {
     WritableMap exifMap = Arguments.createMap();

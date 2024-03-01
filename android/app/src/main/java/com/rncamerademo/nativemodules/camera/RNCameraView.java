@@ -47,8 +47,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class RNCameraView extends FrameLayout implements LifecycleEventListener, FaceDetectorAsyncTaskDelegate,
-    TextRecognizerAsyncTaskDelegate, PictureSavedDelegate {
+public class RNCameraView extends FrameLayout implements LifecycleEventListener, PictureSavedDelegate {
   private static final String TAG = "rncameranativemodule";
 
   /** The camera device faces the opposite direction as the device's screen. */
@@ -97,16 +96,10 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   private Map<Promise, ReadableMap> mPictureTakenOptions = new ConcurrentHashMap<>();
   private Map<Promise, File> mPictureTakenDirectories = new ConcurrentHashMap<>();
 
-  private ScaleGestureDetector mScaleGestureDetector;
-  private GestureDetector mGestureDetector;
-
 
   private boolean mIsPaused = false;
   private boolean mIsNew = true;
   private boolean mUseNativeZoom=false;
-
-  public volatile boolean faceDetectorTaskLock = false;
-  public volatile boolean googleBarcodeDetectorTaskLock = false;
   public volatile boolean textRecognizerTaskLock = false;
 
   // Scanning-related properties
@@ -139,14 +132,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
 
     addCallback(new Callback() {
-      public void onCameraOpened(RNCameraView rnCameraView) {
-        RNCameraViewHelper.emitCameraReadyEvent(rnCameraView);
-      }
-
-      public void onMountError(RNCameraView cameraView) {
-        RNCameraViewHelper.emitMountErrorEvent(cameraView, "Camera view threw an error - component could not be rendered.");
-      }
-
       public void onPictureTaken(RNCameraView cameraView, final byte[] data, int deviceOrientation, int softwareRotation) {
         Promise promise = mPictureTakenPromises.poll();
         ReadableMap options = mPictureTakenOptions.remove(promise);
@@ -299,35 +284,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     RNCameraViewHelper.emitPictureSavedEvent(this, response);
   }
 
-
-  public void setShouldDetectTouches(boolean shouldDetectTouches) {
-    if(!mShouldDetectTouches && shouldDetectTouches){
-      mGestureDetector=new GestureDetector(mThemedReactContext,onGestureListener);
-    }else{
-      mGestureDetector=null;
-    }
-    this.mShouldDetectTouches = shouldDetectTouches;
-  }
-
-  public void setUseNativeZoom(boolean useNativeZoom){
-    if(!mUseNativeZoom && useNativeZoom){
-      mScaleGestureDetector = new ScaleGestureDetector(mThemedReactContext,onScaleGestureListener);
-    }else{
-      mScaleGestureDetector=null;
-    }
-    mUseNativeZoom=useNativeZoom;
-  }
-
-  public boolean onTouchEvent(MotionEvent event) {
-    if(mUseNativeZoom) {
-      mScaleGestureDetector.onTouchEvent(event);
-    }
-    if(mShouldDetectTouches){
-      mGestureDetector.onTouchEvent(event);
-    }
-    return true;
-  }
-
   /**
    * Initial setup of the face detector
    */
@@ -367,38 +323,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     }
   }
 
-  public void onFacesDetected(WritableArray data) {
-    if (!mShouldDetectFaces) {
-      return;
-    }
-
-    RNCameraViewHelper.emitFacesDetectedEvent(this, data);
-  }
-
-  public void onFaceDetectionError(RNFaceDetector faceDetector) {
-    if (!mShouldDetectFaces) {
-      return;
-    }
-
-    RNCameraViewHelper.emitFaceDetectionErrorEvent(this, faceDetector);
-  }
-
-  public void onFaceDetectingTaskCompleted() {
-    faceDetectorTaskLock = false;
-  }
-
-  public void onBarcodeDetectionError(RNBarcodeDetector barcodeDetector) {
-    if (!mShouldGoogleDetectBarcodes) {
-      return;
-    }
-
-    RNCameraViewHelper.emitBarcodeDetectionErrorEvent(this, barcodeDetector);
-  }
-
-  public void onBarcodeDetectingTaskCompleted() {
-    googleBarcodeDetectorTaskLock = false;
-  }
-
   /**
    *
    * Text recognition
@@ -409,37 +333,18 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
   }
 
-  public void onTextRecognized(WritableArray serializedData) {
-    if (!mShouldRecognizeText) {
-      return;
-    }
-
-    RNCameraViewHelper.emitTextRecognizedEvent(this, serializedData);
-  }
-
-  public void onTextRecognizerTaskCompleted() {
-    textRecognizerTaskLock = false;
-  }
-
   /**
   *
   * End Text Recognition */
 
   public void onHostResume() {
-    if (hasCameraPermissions()) {
-      mBgHandler.post(new Runnable() {
-        @Override
-        public void run() {
-          if ((mIsPaused && !isCameraOpened()) || mIsNew) {
-            mIsPaused = false;
-            mIsNew = false;
-            mCamera2.start();
-          }
-        }
-      });
-    } else {
-      RNCameraViewHelper.emitMountErrorEvent(this, "Camera permissions not granted - component could not be rendered.");
-    }
+    mBgHandler.post(() -> {
+      if ((mIsPaused && !isCameraOpened()) || mIsNew) {
+        mIsPaused = false;
+        mIsNew = false;
+        mCamera2.start();
+      }
+    });
   }
 
   public boolean isCameraOpened() {
@@ -576,39 +481,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     preview = new TextureViewPreview(context, this);
     return preview;
   }
-
-  private GestureDetector.SimpleOnGestureListener onGestureListener = new GestureDetector.SimpleOnGestureListener(){
-    @Override
-    public boolean onSingleTapUp(MotionEvent e) {
-      RNCameraViewHelper.emitTouchEvent(RNCameraView.this,false,scalePosition(e.getX()),scalePosition(e.getY()));
-      return true;
-    }
-
-    @Override
-    public boolean onDoubleTap(MotionEvent e) {
-      RNCameraViewHelper.emitTouchEvent(RNCameraView.this,true,scalePosition(e.getX()),scalePosition(e.getY()));
-      return true;
-    }
-  };
-  private ScaleGestureDetector.OnScaleGestureListener onScaleGestureListener = new ScaleGestureDetector.OnScaleGestureListener() {
-
-    @Override
-    public boolean onScale(ScaleGestureDetector scaleGestureDetector) {
-      onZoom(scaleGestureDetector.getScaleFactor());
-      return true;
-    }
-
-    @Override
-    public boolean onScaleBegin(ScaleGestureDetector scaleGestureDetector) {
-      onZoom(scaleGestureDetector.getScaleFactor());
-      return true;
-    }
-
-    @Override
-    public void onScaleEnd(ScaleGestureDetector scaleGestureDetector) {
-    }
-
-  };
 
   @SuppressWarnings("UnusedParameters")
   public abstract static class Callback {

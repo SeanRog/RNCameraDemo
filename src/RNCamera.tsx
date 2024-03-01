@@ -74,7 +74,6 @@ type CameraViewProps = ViewProps & {
   flashMode: number,
   autoFocus: boolean,
   zoom: number,
-  useNativeZoom: boolean,
   barCodeScannerEnabled: boolean,
 	googleVisionBarcodeDetectorEnabled: boolean,
   faceDetectorEnabled: boolean,
