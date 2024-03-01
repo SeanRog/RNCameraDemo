@@ -88,11 +88,7 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
   private final CallbackBridge mCallbacks;
 
-  private boolean mAdjustViewBounds;
-
   private ReactContext mThemedReactContext;
-
-  private final DisplayOrientationDetector mDisplayOrientationDetector;
 
   protected HandlerThread mBgThread;
 
@@ -100,8 +96,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   private Queue<Promise> mPictureTakenPromises = new ConcurrentLinkedQueue<>();
   private Map<Promise, ReadableMap> mPictureTakenOptions = new ConcurrentHashMap<>();
   private Map<Promise, File> mPictureTakenDirectories = new ConcurrentHashMap<>();
-  private List<String> mBarCodeTypes = null;
-  private boolean mDetectedImageInEvent = false;
 
   private ScaleGestureDetector mScaleGestureDetector;
   private GestureDetector mGestureDetector;
@@ -109,20 +103,14 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
   private boolean mIsPaused = false;
   private boolean mIsNew = true;
-  private boolean invertImageData = false;
-  private Boolean mIsRecording = false;
   private boolean mUseNativeZoom=false;
 
-  // Concurrency lock for scanners to avoid flooding the runtime
-  public volatile boolean barCodeScannerTaskLock = false;
   public volatile boolean faceDetectorTaskLock = false;
   public volatile boolean googleBarcodeDetectorTaskLock = false;
   public volatile boolean textRecognizerTaskLock = false;
 
   // Scanning-related properties
-  private MultiFormatReader mMultiFormatReader;
   private RNFaceDetector mFaceDetector;
-  private RNBarcodeDetector mGoogleBarcodeDetector;
   private boolean mShouldDetectFaces = false;
   private boolean mShouldGoogleDetectBarcodes = false;
   private boolean mShouldScanBarCodes = false;
@@ -146,20 +134,11 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     mBgThread = new HandlerThread("RNCamera-Handler-Thread");
     mBgThread.start();
     mBgHandler = new Handler(mBgThread.getLooper());
-    mAdjustViewBounds = true;
     final TextureViewPreview preview = createPreview(mThemedReactContext);
     mCallbacks = new CallbackBridge();
 
     mCamera2 = new Camera2(mCallbacks, preview, mThemedReactContext, mBgHandler);
 
-    // Display orientation detector
-    mDisplayOrientationDetector = new DisplayOrientationDetector(mThemedReactContext) {
-      @Override
-      public void onDisplayOrientationChanged(int displayOrientation, int deviceOrientation) {
-        mCamera2.setDisplayOrientation(displayOrientation);
-        mCamera2.setDeviceOrientation(deviceOrientation);
-      }
-    };
 
     addCallback(new Callback() {
       public void onCameraOpened(RNCameraView rnCameraView) {
@@ -185,23 +164,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
                   .execute();
         }
         RNCameraViewHelper.emitPictureTakenEvent(cameraView);
-      }
-
-      public void onFramePreview(RNCameraView cameraView, Image image, int width, int height, int rotation) {
-//        Log.d(TAG, "rotation:: " + rotation);
-        int correctRotation = RNCameraViewHelper.getCorrectCameraRotation(rotation, mCamera2.getFacing(), mCamera2.getCameraOrientation());
-        boolean willCallFaceTask = mShouldDetectFaces && !faceDetectorTaskLock && cameraView instanceof FaceDetectorAsyncTaskDelegate;
-        boolean willCallGoogleBarcodeTask = mShouldGoogleDetectBarcodes && !googleBarcodeDetectorTaskLock && cameraView instanceof BarcodeDetectorAsyncTaskDelegate;
-        boolean willCallTextTask = mShouldRecognizeText && !textRecognizerTaskLock && cameraView instanceof TextRecognizerAsyncTaskDelegate;
-        if (!willCallFaceTask && !willCallGoogleBarcodeTask && !willCallTextTask) {
-          return;
-        }
-
-        if (willCallFaceTask) {
-          faceDetectorTaskLock = true;
-          FaceDetectorAsyncTaskDelegate delegate = (FaceDetectorAsyncTaskDelegate) cameraView;
-          new FaceDetectorAsyncTask(delegate, mFaceDetector, image, width, height, correctRotation, getResources().getDisplayMetrics().density, mCamera2.getFacing(), getWidth(), getHeight(), mPaddingX, mPaddingY).execute();
-        }
       }
     });
   }
@@ -310,29 +272,13 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     mCamera2.setWhiteBalance(whiteBalance);
   }
 
-  public void setPlaySoundOnCapture(boolean playSoundOnCapture) {
-    mCamera2.setPlaySoundOnCapture(playSoundOnCapture);
-  }
-
   public void setPictureSize(@NonNull Size size) {
     mCamera2.setPictureSize(size);
-  }
-
-  public void setPlaySoundOnRecord(boolean playSoundOnRecord) {
-    mCamera2.setPlaySoundOnRecord(playSoundOnRecord);
   }
 
   @SuppressLint("all")
   public void requestLayout() {
     // React handles this for us, so we don't need to call super.requestLayout();
-  }
-
-  public void setBarCodeTypes(List<String> barCodeTypes) {
-    mBarCodeTypes = barCodeTypes;
-  }
-
-  public void setDetectedImageInEvent(boolean detectedImageInEvent) {
-    this.mDetectedImageInEvent = detectedImageInEvent;
   }
 
   public void takePicture(final ReadableMap options, final Promise promise, final File cacheDirectory) {
@@ -360,13 +306,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   public void setShouldScanBarCodes(boolean shouldScanBarCodes) {
     this.mShouldScanBarCodes = shouldScanBarCodes;
     mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
-  }
-
-  public void onBarCodeScanningTaskCompleted() {
-    barCodeScannerTaskLock = false;
-    if(mMultiFormatReader != null) {
-      mMultiFormatReader.reset();
-    }
   }
 
 
@@ -553,10 +492,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     if (mFaceDetector != null) {
       mFaceDetector.release();
     }
-    if (mGoogleBarcodeDetector != null) {
-      mGoogleBarcodeDetector.release();
-    }
-    mMultiFormatReader = null;
     mThemedReactContext.removeLifecycleEventListener(this);
 
     // camera release can be quite expensive. Run in on bg handler
@@ -618,10 +553,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
       mCallbacks.add(callback);
     }
 
-    public void remove(Callback callback) {
-      mCallbacks.remove(callback);
-    }
-
     @Override
     public void onCameraOpened() {
       if (mRequestLayoutOnOpen) {
@@ -659,10 +590,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
       for (Callback callback : mCallbacks) {
         callback.onMountError(RNCameraView.this);
       }
-    }
-
-    public void reserveRequestLayoutOnOpen() {
-      mRequestLayoutOnOpen = true;
     }
   }
 

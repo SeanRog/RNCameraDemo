@@ -219,32 +219,6 @@ public class RNCameraViewHelper {
       }
      });
   }
-
-  // video recording start/end events
-
-  public static void emitRecordingStartEvent(final ViewGroup view, final WritableMap response) {
-
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        RecordingStartEvent event = RecordingStartEvent.obtain(view.getId(), response);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-     });
-  }
-
-  public static void emitRecordingEndEvent(final ViewGroup view) {
-
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        RecordingEndEvent event = RecordingEndEvent.obtain(view.getId());
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-     });
-  }
   // Touch event
   public static void emitTouchEvent(final ViewGroup view, final boolean isDoubleTap, final int x, final int y) {
 
@@ -284,20 +258,6 @@ public class RNCameraViewHelper {
     });
   }
 
-  // Barcode detection events
-
-  public static void emitBarcodesDetectedEvent(final ViewGroup view, final WritableArray barcodes, final byte[] compressedImage) {
-
-    final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        BarcodesDetectedEvent event = BarcodesDetectedEvent.obtain(view.getId(), barcodes, compressedImage);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-    });
-  }
-
   public static void emitBarcodeDetectionErrorEvent(final ViewGroup view, final RNBarcodeDetector barcodeDetector) {
 
     final ReactContext reactContext = (ReactContext) view.getContext();
@@ -305,17 +265,6 @@ public class RNCameraViewHelper {
       @Override
       public void run() {
         BarcodeDetectionErrorEvent event = BarcodeDetectionErrorEvent.obtain(view.getId(), barcodeDetector);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-    });
-  }
-
-  public static void emitBarCodeReadEvent(final Context context, final Barcode barCode, final int width, final int height) {
-    final ReactContext reactContext = (ReactContext) context;
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        BarCodeReadEvent event = BarCodeReadEvent.obtain(barCode, width, height);
         reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
       }
     });
@@ -349,36 +298,6 @@ public class RNCameraViewHelper {
   private static boolean rotationIsLandscape(int rotation) {
     return (rotation == Constants.LANDSCAPE_90 ||
             rotation == Constants.LANDSCAPE_270);
-  }
-
-  private static int getCamcorderProfileQualityFromCameraModuleConstant(int quality) {
-    switch (quality) {
-      case CameraModule.VIDEO_2160P:
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-          return CamcorderProfile.QUALITY_2160P;
-        }
-      case CameraModule.VIDEO_1080P:
-        return CamcorderProfile.QUALITY_1080P;
-      case CameraModule.VIDEO_720P:
-        return CamcorderProfile.QUALITY_720P;
-      case CameraModule.VIDEO_480P:
-        return CamcorderProfile.QUALITY_480P;
-      case CameraModule.VIDEO_4x3:
-        return CamcorderProfile.QUALITY_480P;
-    }
-    return CamcorderProfile.QUALITY_HIGH;
-  }
-
-  public static CamcorderProfile getCamcorderProfile(int quality) {
-    CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_HIGH);
-    int camcorderQuality = getCamcorderProfileQualityFromCameraModuleConstant(quality);
-    if (CamcorderProfile.hasProfile(camcorderQuality)) {
-      profile = CamcorderProfile.get(camcorderQuality);
-      if (quality == CameraModule.VIDEO_4x3) {
-        profile.videoFrameWidth = 640;
-      }
-    }
-    return profile;
   }
 
   public static WritableMap getExifData(ExifInterface exifInterface) {
@@ -451,24 +370,5 @@ public class RNCameraViewHelper {
     exifInterface.setAttribute(ExifInterface.TAG_GPS_LATITUDE, null);
     exifInterface.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, null);
     exifInterface.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, null);
-  }
-
-  public static Bitmap generateSimulatorPhoto(int width, int height) {
-    Bitmap fakePhoto = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-    Canvas canvas = new Canvas(fakePhoto);
-    Paint background = new Paint();
-    background.setColor(Color.BLACK);
-    canvas.drawRect(0, 0, width, height, background);
-    Paint textPaint = new Paint();
-    textPaint.setColor(Color.YELLOW);
-    textPaint.setTextSize(35);
-    Calendar calendar = Calendar.getInstance();
-    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy.MM.dd G '->' HH:mm:ss z");
-    canvas.drawText(simpleDateFormat.format(calendar.getTime()), width * 0.1f, height * 0.2f, textPaint);
-    canvas.drawText(simpleDateFormat.format(calendar.getTime()), width * 0.2f, height * 0.4f, textPaint);
-    canvas.drawText(simpleDateFormat.format(calendar.getTime()), width * 0.3f, height * 0.6f, textPaint);
-    canvas.drawText(simpleDateFormat.format(calendar.getTime()), width * 0.4f, height * 0.8f, textPaint);
-
-    return fakePhoto;
   }
 }

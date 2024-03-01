@@ -3,7 +3,6 @@ import {Button, Image, View, useWindowDimensions} from 'react-native';
 import Camera, {BarcodeFormatsFromEvent, takePictureAsync} from './src/RNCamera';
 
 export default function App() {
-	const {width: screenWidth, height: screenHeight} = useWindowDimensions();
 	
   return (
     <View ref={undefined} style={{width: '100%', height: '100%', backgroundColor: 'purple'}}>
@@ -21,7 +20,6 @@ export default function App() {
 				googleVisionBarcodeDetectorEnabled={false}
 				faceDetectorEnabled={true}
 				faceDetectionMode={1}
-				barCodeTypes={['code39', 'code93', 'code128', 'qr']}
 				onCameraReady={() => {
 					console.log('camera ready');
 				}}
@@ -38,7 +36,7 @@ export default function App() {
 				onTextRecognized={(event) => {
 					console.log('onTextRecognized event from app.tsx:: ', event);
 				}} />
-				{/* <Image style={{width: 400, height: 400}} src='file:///data/user/0/com.rncamerademo/cache/Camera/2f874763-9978-4828-a57b-84ad7de583bc.jpg'></Image> */}
+				{/* <Image style={{width: 400, height: 400}} src='file:///data/user/0/com.rncamerademo/cache/Camera/4692b340-8098-4699-bc7a-150fd0896745.jpg'></Image> */}
 
 				{/* <TouchableOpacity
 					onPress={() => console.log('take picture pressed')}

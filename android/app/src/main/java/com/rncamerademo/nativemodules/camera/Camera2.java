@@ -331,10 +331,6 @@ class Camera2 {
 
     private boolean mIsScanning;
 
-    private Boolean mPlaySoundOnCapture = false;
-
-    private Boolean mPlaySoundOnRecord = false;
-
     private Surface mPreviewSurface;
 
     private Rect mInitialCropRegion;
@@ -657,22 +653,6 @@ class Camera2 {
 
     public int getWhiteBalance() {
         return mWhiteBalance;
-    }
-
-    void setPlaySoundOnCapture(boolean playSoundOnCapture) {
-        mPlaySoundOnCapture = playSoundOnCapture;
-    }
-
-    public boolean getPlaySoundOnCapture(){
-        return mPlaySoundOnCapture;
-    }
-
-    void setPlaySoundOnRecord(boolean playSoundOnRecord) {
-        mPlaySoundOnRecord = playSoundOnRecord;
-    }
-
-    boolean getPlaySoundOnRecord() {
-        return mPlaySoundOnRecord;
     }
 
     void setScanning(boolean isScanning) {
@@ -1302,9 +1282,6 @@ class Camera2 {
                             if (mPictureCaptureCallback.getOptions().hasKey("pauseAfterCapture")
                               && !mPictureCaptureCallback.getOptions().getBoolean("pauseAfterCapture")) {
                                 unlockFocus();
-                            }
-                            if (mPlaySoundOnCapture) {
-                                sound.play(MediaActionSound.SHUTTER_CLICK);
                             }
                         }
                     }, null);

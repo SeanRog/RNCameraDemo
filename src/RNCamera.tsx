@@ -57,137 +57,6 @@ type FaceFeature = {
   rollAngle?: number,
 };
 
-type TrackedFaceFeature = FaceFeature & {
-  faceID?: number,
-};
-
-type TrackedTextFeature = {
-  type: string,
-  bounds: {
-    size: {
-      width: number,
-      height: number,
-    },
-    origin: {
-      x: number,
-      y: number,
-    },
-  },
-  value: string,
-  components: Array<TrackedTextFeature>,
-};
-
-type TrackedBarcodeFeature = {
-  bounds: {
-    size: {
-      width: number,
-      height: number,
-    },
-    origin: {
-      x: number,
-      y: number,
-    },
-  },
-  data: string,
-  dataRaw: string,
-  type: BarcodeType,
-  format?: string,
-  addresses?: {
-    addressesType?: 'UNKNOWN' | 'Work' | 'Home',
-    addressLines?: string[],
-  }[],
-  emails?: Email[],
-  phones?: Phone[],
-  urls?: (string[]),
-  name?: {
-    firstName?: string,
-    lastName?: string,
-    middleName?: string,
-    prefix?: string,
-    pronounciation?: string,
-    suffix?: string,
-    formattedName?: string,
-  },
-  phone?: Phone,
-  organization?: string,
-  latitude?: number,
-  longitude?: number,
-  ssid?: string,
-  password?: string,
-  encryptionType?: string,
-  title?: string,
-  url?: string,
-  firstName?: string,
-  middleName?: string,
-  lastName?: string,
-  gender?: string,
-  addressCity?: string,
-  addressState?: string,
-  addressStreet?: string,
-  addressZip?: string,
-  birthDate?: string,
-  documentType?: string,
-  licenseNumber?: string,
-  expiryDate?: string,
-  issuingDate?: string,
-  issuingCountry?: string,
-  eventDescription?: string,
-  location?: string,
-  organizer?: string,
-  status?: string,
-  summary?: string,
-  start?: string,
-  end?: string,
-  email?: Email,
-  phoneNumber?: string,
-  message?: string,
-};
-
-type BarcodeType =
-  | 'EMAIL'
-  | 'PHONE'
-  | 'CALENDAR_EVENT'
-  | 'DRIVER_LICENSE'
-  | 'GEO'
-  | 'SMS'
-  | 'CONTACT_INFO'
-  | 'WIFI'
-  | 'TEXT'
-  | 'ISBN'
-  | 'PRODUCT'
-  | 'URL';
-
-type BarcodeFormats = 
-	| 'aztec'
-  | 'ean13'
-	| 'ean8'
-	| 'qr'
-	| 'pdf417'
-	| 'upc_e'
-	| 'datamatrix'
-	| 'code39'
-	| 'code93'
-	| 'interleaved2of5'
-	| 'codabar'
-	| 'code128'
-	| 'maxicode'
-	| 'rss14'
-	| 'rssexpanded'
-	| 'upc_a'
-	| 'upc_ean'
-
-type Email = {
-  address?: string,
-  body?: string,
-  subject?: string,
-  emailType?: 'UNKNOWN' | 'Work' | 'Home',
-};
-
-type Phone = {
-  number?: string,
-  phoneType?: 'UNKNOWN' | 'Work' | 'Home' | 'Fax' | 'Mobile',
-};
-
 // refactor any
 type EventCallbackArgumentsType = {
   nativeEvent: any,
@@ -197,11 +66,6 @@ type CameraIds = {
   id: string,
   type: number
 }[];
-
-type CameraViewDimensions = {
-  width: number,
-  height: number,
-};
 
 type CameraViewProps = ViewProps & {
   type: number,
@@ -219,7 +83,6 @@ type CameraViewProps = ViewProps & {
   faceDetectionClassifications: number,
   trackingEnabled: boolean,
   textRecognizerEnabled: boolean,
-	barCodeTypes?: BarcodeFormats[],
 	onCameraReady?: ({ nativeEvent }: EventCallbackArgumentsType) => void,
 	onBarCodeRead: (event: barcodeEventData) => void,
 	onFacesDetected: (event: faceDetectionEventData) => void,
