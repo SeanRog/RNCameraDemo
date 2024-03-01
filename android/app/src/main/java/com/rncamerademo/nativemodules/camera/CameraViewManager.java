@@ -136,19 +136,9 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
     view.setPictureSize(size.equals("None") ? null : Size.parse(size));
   }
 
-  @ReactProp(name = "barCodeScannerEnabled")
-  public void setBarCodeScanning(RNCameraView view, boolean barCodeScannerEnabled) {
-    view.setShouldScanBarCodes(barCodeScannerEnabled);
-  }
-
   @ReactProp(name = "touchDetectorEnabled")
   public void setTouchDetectorEnabled(RNCameraView view, boolean touchDetectorEnabled) {
     view.setShouldDetectTouches(touchDetectorEnabled);
-  }
-
-  @ReactProp(name = "faceDetectorEnabled")
-  public void setFaceDetecting(RNCameraView view, boolean faceDetectorEnabled) {
-    view.setShouldDetectFaces(faceDetectorEnabled);
   }
 
   @ReactProp(name = "faceDetectionMode")
@@ -169,11 +159,6 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
   @ReactProp(name = "trackingEnabled")
   public void setTracking(RNCameraView view, boolean trackingEnabled) {
     view.setTracking(trackingEnabled);
-  }
-
-  @ReactProp(name = "googleVisionBarcodeDetectorEnabled")
-  public void setGoogleVisionBarcodeDetecting(RNCameraView view, boolean googleBarcodeDetectorEnabled) {
-    view.setShouldGoogleDetectBarcodes(googleBarcodeDetectorEnabled);
   }
 
   @ReactProp(name = "textRecognizerEnabled")

@@ -120,8 +120,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   private int mFaceDetectionLandmarks = RNFaceDetector.NO_LANDMARKS;
   private int mFaceDetectionClassifications = RNFaceDetector.NO_CLASSIFICATIONS;
   private boolean mTrackingEnabled = true;
-  private int mPaddingX;
-  private int mPaddingY;
 
   private static RNCameraView rnCameraView;
 
@@ -218,8 +216,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     }
     int paddingX = (int) ((width - correctWidth) / 2);
     int paddingY = (int) ((height - correctHeight) / 2);
-    mPaddingX = paddingX;
-    mPaddingY = paddingY;
     preview.layout(paddingX, paddingY, correctWidth + paddingX, correctHeight + paddingY);
   }
 
@@ -303,11 +299,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     RNCameraViewHelper.emitPictureSavedEvent(this, response);
   }
 
-  public void setShouldScanBarCodes(boolean shouldScanBarCodes) {
-    this.mShouldScanBarCodes = shouldScanBarCodes;
-    mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
-  }
-
 
   public void setShouldDetectTouches(boolean shouldDetectTouches) {
     if(!mShouldDetectTouches && shouldDetectTouches){
@@ -376,14 +367,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     }
   }
 
-  public void setShouldDetectFaces(boolean shouldDetectFaces) {
-    if (shouldDetectFaces && mFaceDetector == null) {
-      setupFaceDetector();
-    }
-    this.mShouldDetectFaces = shouldDetectFaces;
-    mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
-  }
-
   public void onFacesDetected(WritableArray data) {
     if (!mShouldDetectFaces) {
       return;
@@ -402,12 +385,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
   public void onFaceDetectingTaskCompleted() {
     faceDetectorTaskLock = false;
-  }
-
-
-  public void setShouldGoogleDetectBarcodes(boolean shouldDetectBarcodes) {
-    this.mShouldGoogleDetectBarcodes = shouldDetectBarcodes;
-    mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
   }
 
   public void onBarcodeDetectionError(RNBarcodeDetector barcodeDetector) {
