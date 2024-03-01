@@ -4,7 +4,6 @@ import Camera, {takePictureAsync} from './src/RNCamera';
 
 export default function App() {
 	const {width: screenWidth, height: screenHeight} = useWindowDimensions();
-
 	
   return (
     <View ref={undefined} style={{width: '100%', height: '100%', backgroundColor: 'purple'}}>
@@ -34,14 +33,14 @@ export default function App() {
 					width: screenWidth,
 					height: screenHeight
 				}}
-				onBarCodeRead={function ({ nativeEvent }: { nativeEvent: any; }): void {
-					console.log('onBarcodeRead:: ', nativeEvent);
+				onBarCodeRead={(event) => {
+					console.log('barcode event from app.tsx:: ', event);
 				}}
-				onFacesDetected={function ({ nativeEvent }: { nativeEvent: any; }): void {
-					console.log('onFacesDetected:: ', nativeEvent);
+				onFacesDetected={(event) => {
+					console.log('onFacesDetected event from app.tsx:: ', event);
 				}}
-				onTextRecognized={function ({ nativeEvent }: { nativeEvent: any; }): void {
-					console.log('onTextRecognized:: ', nativeEvent);
+				onTextRecognized={(event) => {
+					console.log('onTextRecognized event from app.tsx:: ', event);
 				}} />
 				{/* <Image style={{width: 400, height: 400}} src='file:///data/user/0/com.rncamerademo/cache/Camera/2f874763-9978-4828-a57b-84ad7de583bc.jpg'></Image> */}
 

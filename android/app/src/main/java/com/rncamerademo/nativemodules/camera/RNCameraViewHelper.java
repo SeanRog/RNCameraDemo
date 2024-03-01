@@ -1,5 +1,6 @@
 package com.rncamerademo.nativemodules.camera;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -16,6 +17,7 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.uimanager.UIManagerModule;
 
+import com.google.mlkit.vision.barcode.Barcode;
 import com.google.zxing.Result;
 
 import com.rncamerademo.nativemodules.camera.events.*;
@@ -310,12 +312,23 @@ public class RNCameraViewHelper {
 
   // Bar code read event
 
-  public static void emitBarCodeReadEvent(final ViewGroup view, final Result barCode, final int width, final int height, final byte[] compressedImage) {
-    final ReactContext reactContext = (ReactContext) view.getContext();
+//  public static void emitBarCodeReadEvent(final ViewGroup view, final Result barCode, final int width, final int height, final byte[] compressedImage) {
+//    final ReactContext reactContext = (ReactContext) view.getContext();
+//    reactContext.runOnNativeModulesQueueThread(new Runnable() {
+//      @Override
+//      public void run() {
+//        BarCodeReadEvent event = BarCodeReadEvent.obtain(view.getId(), barCode, width,  height, compressedImage);
+//        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
+//      }
+//    });
+//  }
+
+  public static void emitBarCodeReadEvent(final Context context, final Barcode barCode, final int width, final int height) {
+    final ReactContext reactContext = (ReactContext) context;
     reactContext.runOnNativeModulesQueueThread(new Runnable() {
       @Override
       public void run() {
-        BarCodeReadEvent event = BarCodeReadEvent.obtain(view.getId(), barCode, width,  height, compressedImage);
+        BarCodeReadEvent event = BarCodeReadEvent.obtain(barCode, width, height);
         reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
       }
     });

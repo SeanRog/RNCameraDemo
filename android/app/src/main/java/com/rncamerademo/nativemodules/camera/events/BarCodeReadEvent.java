@@ -1,8 +1,10 @@
 package com.rncamerademo.nativemodules.camera.events;
 
+import android.graphics.Point;
 import android.util.Base64;
 import androidx.core.util.Pools;
 
+import com.google.mlkit.vision.barcode.Barcode;
 import com.rncamerademo.nativemodules.camera.CameraViewManager;
 
 import com.facebook.react.bridge.Arguments;
@@ -11,7 +13,6 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.RCTEventEmitter;
 
-import com.google.zxing.Result;
 import com.google.zxing.ResultPoint;
 
 import java.util.Formatter;
@@ -20,28 +21,25 @@ public class BarCodeReadEvent extends Event<BarCodeReadEvent> {
   private static final Pools.SynchronizedPool<BarCodeReadEvent> EVENTS_POOL =
       new Pools.SynchronizedPool<>(3);
 
-  private Result mBarCode;
+  private Barcode mBarCode;
   private int mWidth;
   private int mHeight;
-  private byte[] mCompressedImage;
 
   private BarCodeReadEvent() {}
 
-  public static BarCodeReadEvent obtain(int viewTag, Result barCode, int width, int height, byte[] compressedImage) {
+  public static BarCodeReadEvent obtain(Barcode barCode, int width, int height) {
     BarCodeReadEvent event = EVENTS_POOL.acquire();
     if (event == null) {
       event = new BarCodeReadEvent();
     }
-    event.init(viewTag, barCode, width, height, compressedImage);
+    event.init(barCode, width, height);
     return event;
   }
 
-  protected void init(int viewTag, Result barCode, int width, int height, byte[] compressedImage) {
-    super.init(viewTag);
+  protected void init(Barcode barCode, int width, int height) {
     mBarCode = barCode;
     mWidth = width;
     mHeight = height;
-    mCompressedImage = compressedImage;
   }
 
   /**
@@ -53,7 +51,7 @@ public class BarCodeReadEvent extends Event<BarCodeReadEvent> {
    */
   @Override
   public short getCoalescingKey() {
-    int hashCode = mBarCode.getText().hashCode() % Short.MAX_VALUE;
+    int hashCode = mBarCode.getRawValue().hashCode() % Short.MAX_VALUE;
     return (short) hashCode;
   }
 
@@ -72,7 +70,7 @@ public class BarCodeReadEvent extends Event<BarCodeReadEvent> {
     WritableMap eventOrigin = Arguments.createMap();
 
     event.putInt("target", getViewTag());
-    event.putString("data", mBarCode.getText());
+    event.putString("data", mBarCode.getRawValue());
 
     byte[] rawBytes = mBarCode.getRawBytes();
     if (rawBytes != null && rawBytes.length > 0) {
@@ -84,14 +82,14 @@ public class BarCodeReadEvent extends Event<BarCodeReadEvent> {
       formatter.close();
     } 
 
-    event.putString("type", mBarCode.getBarcodeFormat().toString());
+    event.putString("type", String.valueOf(mBarCode.getFormat()));
     WritableArray resultPoints = Arguments.createArray();
-    ResultPoint[] points = mBarCode.getResultPoints();
-    for (ResultPoint point: points) {
+    Point[] points = mBarCode.getCornerPoints();
+    for (Point point: points) {
       if(point!=null) {
         WritableMap newPoint = Arguments.createMap();
-        newPoint.putString("x", String.valueOf(point.getX()));
-        newPoint.putString("y", String.valueOf(point.getY()));
+        newPoint.putString("x", String.valueOf(point.x));
+        newPoint.putString("y", String.valueOf(point.y));
         resultPoints.pushMap(newPoint);
       }
     }
@@ -100,9 +98,6 @@ public class BarCodeReadEvent extends Event<BarCodeReadEvent> {
     eventOrigin.putInt("height", mHeight);
     eventOrigin.putInt("width", mWidth);
     event.putMap("bounds", eventOrigin);
-    if (mCompressedImage != null) {
-      event.putString("image", Base64.encodeToString(mCompressedImage, Base64.NO_WRAP));
-    }
     return event;
   }
 }

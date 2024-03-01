@@ -37,6 +37,8 @@ import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaActionSound;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.Surface;
@@ -44,8 +46,16 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Dynamic;
+import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
+import com.facebook.react.bridge.ReadableType;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.android.gms.tasks.Task;
 import com.google.mlkit.vision.barcode.Barcode;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
@@ -65,8 +75,11 @@ import com.rncamerademo.nativemodules.camera.utils.ObjectUtils;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
@@ -211,9 +224,6 @@ class Camera2 {
                 if (image.getFormat() == ImageFormat.JPEG) {
                     // @TODO: implement deviceOrientation
                     mCallback.onPictureTaken(data, 0, 0);
-                } else {
-//                        mCallback.onFramePreview(data, image.getWidth(), image.getHeight(), mDisplayOrientation);
-//                    mCallback.onFramePreview(image, image.getWidth(), image.getHeight(), mDisplayOrientation);
                 }
             }
             detectFaces(image);
@@ -228,14 +238,16 @@ class Camera2 {
         InputImage inputImage = InputImage.fromMediaImage(image, 90);
         Task<List<Face>> detectFacetask = mFaceDetector.process(inputImage);
         detectFacetask.addOnSuccessListener(faces -> {
-            if (faces.size() > 0) {
-                Rect rect = faces.get(0).getBoundingBox();
-                Log.d(TAG, "rect.width():: " + rect.width());
-                Log.d(TAG, "rect.height():: " + rect.height());
-                Log.d(TAG, "rect.centerX():: " + rect.centerX());
-                Log.d(TAG, "rect.centerY():: " + rect.centerY());
-            }
-
+            faces.forEach(face -> {
+                Rect rect = face.getBoundingBox();
+                WritableMap faceDetectionEventData = Arguments.createMap();
+                faceDetectionEventData.putInt("width", rect.width());
+                faceDetectionEventData.putInt("height", rect.height());
+                faceDetectionEventData.putInt("centerX", rect.centerX());
+                faceDetectionEventData.putInt("centerY", rect.centerY());
+                mReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("onFacesDetected", faceDetectionEventData);
+            });
         });
     }
 
@@ -244,9 +256,14 @@ class Camera2 {
         Task<List<Barcode>> detectBarcodeTask = mBarcodeScanner.process(inputImage);
         detectBarcodeTask.addOnSuccessListener(barcodes -> {
             Log.d(TAG, "barcodes.size():: " + barcodes.size());
-            if (barcodes.size() > 0) {
-                Log.d(TAG, "barcodes" + barcodes.get(0).getRawValue());
-            }
+            barcodes.forEach(barcode -> {
+                Rect boundingBox = barcode.getBoundingBox();
+                WritableMap barcodeEventData = Arguments.createMap();
+                barcodeEventData.putString("rawValue", barcode.getRawValue());
+                barcodeEventData.putInt("format", barcode.getFormat());
+                mReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("onBarCodeRead", barcodeEventData);
+            });
         });
     }
 
@@ -254,12 +271,14 @@ class Camera2 {
         InputImage inputImage = InputImage.fromMediaImage(image, 90);
         Task<Text> detectTextTask = mTextRecognizer.process(inputImage);
         detectTextTask.addOnSuccessListener(text -> {
-            Log.d(TAG, "text recognized:: " + text.getText());
+            if(!text.getText().isEmpty()) {
+                WritableMap textDetectedEventData = Arguments.createMap();
+                textDetectedEventData.putString("textDetected", text.getText());
+                mReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("onTextRecognized", textDetectedEventData);
+            }
         });
     }
-
-
-
 
     private String mCameraId;
     private String _mCameraId = "";
@@ -320,7 +339,10 @@ class Camera2 {
 
     private Rect mInitialCropRegion;
 
-    Camera2(RNCamCallback callback, TextureViewPreview preview, Context context, Handler bgHandler) {
+    private ReactContext mReactContext;
+
+    Camera2(RNCamCallback callback, TextureViewPreview preview, ReactContext context, Handler bgHandler) {
+        mReactContext = context;
         mCallback = callback;
         mPreview = preview;
         mBgHandler = bgHandler;

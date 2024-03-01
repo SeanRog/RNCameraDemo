@@ -1,6 +1,7 @@
 // @flow
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
+	DeviceEventEmitter,
   Platform,
   NativeModules,
   ViewProps,
@@ -9,6 +10,7 @@ import {
   StyleSheet,
 	findNodeHandle,
 	HostComponent,
+	EmitterSubscription,
 } from 'react-native';
 
 type Orientation = 'auto' | 'landscapeLeft' | 'landscapeRight' | 'portrait' | 'portraitUpsideDown';
@@ -227,10 +229,57 @@ type CameraViewProps = ViewProps & {
   rectOfInterest?: Rect, // limits scanning area
   cameraViewDimensions: CameraViewDimensions,
 	barCodeTypes?: BarcodeFormats[],
-	onCameraReady: ({ nativeEvent }: EventCallbackArgumentsType) => void,
-  onBarCodeRead: ({ nativeEvent }: EventCallbackArgumentsType) => void,
-  onFacesDetected: ({ nativeEvent }: EventCallbackArgumentsType) => void,
-  onTextRecognized: ({ nativeEvent }: EventCallbackArgumentsType) => void,
+	onCameraReady?: ({ nativeEvent }: EventCallbackArgumentsType) => void,
+	onBarCodeRead: (event: barcodeEventData) => void,
+	onFacesDetected: (event: faceDetectionEventData) => void,
+	onTextRecognized: (event: textRecognizedEventData) => void,
+};
+
+export enum BarcodeFormatsFromEvent {
+	FORMAT_UNKNOWN = -1,
+	FORMAT_ALL_FORMATS = 0,
+	FORMAT_CODE_128 = 1,
+	FORMAT_CODE_39 = 2,
+	FORMAT_CODE_93 = 4,
+	FORMAT_CODABAR = 8,
+	FORMAT_DATA_MATRIX = 16,
+	FORMAT_EAN_13 = 32,
+	FORMAT_EAN_8 = 64,
+	FORMAT_ITF = 128,
+	FORMAT_QR_CODE = 256,
+	FORMAT_UPC_A = 512,
+	FORMAT_UPC_E = 1024,
+	FORMAT_PDF417 = 2048,
+	FORMAT_AZTEC = 4096,
+	TYPE_UNKNOWN = 0,
+	TYPE_CONTACT_INFO = 1,
+	TYPE_EMAIL = 2,
+	TYPE_ISBN = 3,
+	TYPE_PHONE = 4,
+	TYPE_PRODUCT = 5,
+	TYPE_SMS = 6,
+	TYPE_TEXT = 7,
+	TYPE_URL = 8,
+	TYPE_WIFI = 9,
+	TYPE_GEO = 10,
+	TYPE_CALENDAR_EVENT = 11,
+	TYPE_DRIVER_LICENSE = 12,
+};
+
+type barcodeEventData = {
+	format: number,
+	rawValue: string,
+};
+
+type faceDetectionEventData = {
+	centerX: number,
+	centerY: number,
+	width: number,
+	height: number,
+};
+
+type textRecognizedEventData = {
+	textDetected: string,
 };
 
 type CameraModuleProps = {
@@ -296,6 +345,35 @@ try {
 const Camera = (props: CameraViewProps) => {
   const _lastEvents: { [event: string]: string } = {};
   const _lastEventsTimes: { [event: string]: number } = {};
+
+	// start/stop barcode/text/face detect event listeners
+	useEffect(() => {
+		let barcodeReadListener: EmitterSubscription;
+		let facesDetectedListener: EmitterSubscription;
+		let textDetectedListener: EmitterSubscription;
+		if (props.barCodeScannerEnabled) {
+			barcodeReadListener = DeviceEventEmitter.addListener('onBarCodeRead', props.onBarCodeRead);
+		}
+		if (props.faceDetectorEnabled) {
+			facesDetectedListener = DeviceEventEmitter.addListener('onFacesDetected', props.onFacesDetected);
+		}
+		if (props.textRecognizerEnabled) {
+			textDetectedListener = DeviceEventEmitter.addListener('onTextRecognized', props.onTextRecognized);
+		}
+		
+		return () => {
+			if (props.barCodeScannerEnabled) {
+				barcodeReadListener.remove();
+			}
+			if (props.faceDetectorEnabled) {
+				facesDetectedListener.remove();
+			}
+			if (props.textRecognizerEnabled) {
+				textDetectedListener.remove();
+			}
+		}
+	}, []);
+	
 
   const styles = StyleSheet.create({
     cameraViewContainer: 

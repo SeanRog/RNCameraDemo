@@ -438,30 +438,30 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   }
 
   public void onBarCodeRead(Result barCode, int width, int height, byte[] imageData) {
-    String barCodeType = barCode.getBarcodeFormat().toString();
-    if (!mShouldScanBarCodes) {
-      return;
-    }
-    if (mBarCodeTypes != null && !mBarCodeTypes.contains(barCodeType)) {
-      return;
-    }
-
-    final byte[] compressedImage;
-    if (mDetectedImageInEvent) {
-      try {
-        // https://stackoverflow.com/a/32793908/122441
-        final YuvImage yuvImage = new YuvImage(imageData, ImageFormat.NV21, width, height, null);
-        final ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
-        yuvImage.compressToJpeg(new Rect(0, 0, width, height), 100, imageStream);
-        compressedImage = imageStream.toByteArray();
-      } catch (Exception e) {
-        throw new RuntimeException(String.format("Error decoding imageData from NV21 format (%d bytes)", imageData.length), e);
-      }
-    } else {
-      compressedImage = null;
-    }
-
-    RNCameraViewHelper.emitBarCodeReadEvent(this, barCode, width, height, compressedImage);
+//    String barCodeType = barCode.getBarcodeFormat().toString();
+//    if (!mShouldScanBarCodes) {
+//      return;
+//    }
+//    if (mBarCodeTypes != null && !mBarCodeTypes.contains(barCodeType)) {
+//      return;
+//    }
+//
+//    final byte[] compressedImage;
+//    if (mDetectedImageInEvent) {
+//      try {
+//        // https://stackoverflow.com/a/32793908/122441
+//        final YuvImage yuvImage = new YuvImage(imageData, ImageFormat.NV21, width, height, null);
+//        final ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
+//        yuvImage.compressToJpeg(new Rect(0, 0, width, height), 100, imageStream);
+//        compressedImage = imageStream.toByteArray();
+//      } catch (Exception e) {
+//        throw new RuntimeException(String.format("Error decoding imageData from NV21 format (%d bytes)", imageData.length), e);
+//      }
+//    } else {
+//      compressedImage = null;
+//    }
+//
+//    RNCameraViewHelper.emitBarCodeReadEvent(this, barCode, width, height);
   }
 
   public void onBarCodeScanningTaskCompleted() {
