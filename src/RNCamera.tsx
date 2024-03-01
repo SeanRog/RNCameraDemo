@@ -193,13 +193,6 @@ type EventCallbackArgumentsType = {
   nativeEvent: any,
 };
 
-type Rect = {
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-};
-
 type CameraIds = {
   id: string,
   type: number
@@ -226,8 +219,6 @@ type CameraViewProps = ViewProps & {
   faceDetectionClassifications: number,
   trackingEnabled: boolean,
   textRecognizerEnabled: boolean,
-  rectOfInterest?: Rect, // limits scanning area
-  cameraViewDimensions: CameraViewDimensions,
 	barCodeTypes?: BarcodeFormats[],
 	onCameraReady?: ({ nativeEvent }: EventCallbackArgumentsType) => void,
 	onBarCodeRead: (event: barcodeEventData) => void,

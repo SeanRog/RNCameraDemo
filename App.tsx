@@ -1,6 +1,6 @@
 import React from 'react';
 import {Button, Image, View, useWindowDimensions} from 'react-native';
-import Camera, {takePictureAsync} from './src/RNCamera';
+import Camera, {BarcodeFormatsFromEvent, takePictureAsync} from './src/RNCamera';
 
 export default function App() {
 	const {width: screenWidth, height: screenHeight} = useWindowDimensions();
@@ -17,7 +17,7 @@ export default function App() {
 				autoFocus={true}
 				zoom={0}
 				useNativeZoom={false}
-				barCodeScannerEnabled={false}
+				barCodeScannerEnabled={true}
 				googleVisionBarcodeDetectorEnabled={false}
 				faceDetectorEnabled={true}
 				faceDetectionMode={1}
@@ -28,13 +28,9 @@ export default function App() {
 				faceDetectionLandmarks={1}
 				faceDetectionClassifications={1}
 				trackingEnabled={true}
-				textRecognizerEnabled={false}
-				cameraViewDimensions={{
-					width: screenWidth,
-					height: screenHeight
-				}}
-				onBarCodeRead={(event) => {
-					console.log('barcode event from app.tsx:: ', event);
+				textRecognizerEnabled={true}
+				onBarCodeRead={({format, rawValue}) => {
+					console.log('barcode event from app.tsx:: ', BarcodeFormatsFromEvent[format] + " " + rawValue);
 				}}
 				onFacesDetected={(event) => {
 					console.log('onFacesDetected event from app.tsx:: ', event);

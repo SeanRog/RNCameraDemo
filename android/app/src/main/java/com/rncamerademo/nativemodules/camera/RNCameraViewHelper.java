@@ -310,19 +310,6 @@ public class RNCameraViewHelper {
     });
   }
 
-  // Bar code read event
-
-//  public static void emitBarCodeReadEvent(final ViewGroup view, final Result barCode, final int width, final int height, final byte[] compressedImage) {
-//    final ReactContext reactContext = (ReactContext) view.getContext();
-//    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-//      @Override
-//      public void run() {
-//        BarCodeReadEvent event = BarCodeReadEvent.obtain(view.getId(), barCode, width,  height, compressedImage);
-//        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-//      }
-//    });
-//  }
-
   public static void emitBarCodeReadEvent(final Context context, final Barcode barCode, final int width, final int height) {
     final ReactContext reactContext = (ReactContext) context;
     reactContext.runOnNativeModulesQueueThread(new Runnable() {

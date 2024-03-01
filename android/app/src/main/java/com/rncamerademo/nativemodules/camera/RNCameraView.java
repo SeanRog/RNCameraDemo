@@ -47,8 +47,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class RNCameraView extends FrameLayout implements LifecycleEventListener, BarCodeScannerAsyncTaskDelegate, FaceDetectorAsyncTaskDelegate,
-    BarcodeDetectorAsyncTaskDelegate, TextRecognizerAsyncTaskDelegate, PictureSavedDelegate {
+public class RNCameraView extends FrameLayout implements LifecycleEventListener, FaceDetectorAsyncTaskDelegate,
+    TextRecognizerAsyncTaskDelegate, PictureSavedDelegate {
   private static final String TAG = "rncameranativemodule";
 
   /** The camera device faces the opposite direction as the device's screen. */
@@ -131,20 +131,9 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   private int mFaceDetectorMode = RNFaceDetector.FAST_MODE;
   private int mFaceDetectionLandmarks = RNFaceDetector.NO_LANDMARKS;
   private int mFaceDetectionClassifications = RNFaceDetector.NO_CLASSIFICATIONS;
-  private int mGoogleVisionBarCodeType = RNBarcodeDetector.ALL_FORMATS;
-  private int mGoogleVisionBarCodeMode = RNBarcodeDetector.NORMAL_MODE;
   private boolean mTrackingEnabled = true;
   private int mPaddingX;
   private int mPaddingY;
-
-  // Limit Android Scan Area
-  private boolean mLimitScanArea = false;
-  private float mScanAreaX = 0.0f;
-  private float mScanAreaY = 0.0f;
-  private float mScanAreaWidth = 0.0f;
-  private float mScanAreaHeight = 0.0f;
-  private int mCameraViewWidth = 0;
-  private int mCameraViewHeight = 0;
 
   private static RNCameraView rnCameraView;
 
@@ -201,55 +190,18 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
       public void onFramePreview(RNCameraView cameraView, Image image, int width, int height, int rotation) {
 //        Log.d(TAG, "rotation:: " + rotation);
         int correctRotation = RNCameraViewHelper.getCorrectCameraRotation(rotation, mCamera2.getFacing(), mCamera2.getCameraOrientation());
-        boolean willCallBarCodeTask = mShouldScanBarCodes && !barCodeScannerTaskLock && cameraView instanceof BarCodeScannerAsyncTaskDelegate;
         boolean willCallFaceTask = mShouldDetectFaces && !faceDetectorTaskLock && cameraView instanceof FaceDetectorAsyncTaskDelegate;
         boolean willCallGoogleBarcodeTask = mShouldGoogleDetectBarcodes && !googleBarcodeDetectorTaskLock && cameraView instanceof BarcodeDetectorAsyncTaskDelegate;
         boolean willCallTextTask = mShouldRecognizeText && !textRecognizerTaskLock && cameraView instanceof TextRecognizerAsyncTaskDelegate;
-        if (!willCallBarCodeTask && !willCallFaceTask && !willCallGoogleBarcodeTask && !willCallTextTask) {
+        if (!willCallFaceTask && !willCallGoogleBarcodeTask && !willCallTextTask) {
           return;
         }
-        // this resolves to true. idk why this is here
-//        if (data.length < (1.5 * width * height)) {
-//            return;
-//        }
-//        if (willCallBarCodeTask) {
-//          Log.d(TAG, "starting barcode task");
-//          barCodeScannerTaskLock = true;
-//          BarCodeScannerAsyncTaskDelegate delegate = (BarCodeScannerAsyncTaskDelegate) cameraView;
-//          new BarCodeScannerAsyncTask(delegate, mMultiFormatReader, imageReader, width, height, mLimitScanArea, mScanAreaX, mScanAreaY, mScanAreaWidth, mScanAreaHeight, mCameraViewWidth, mCameraViewHeight, mCamera2.getAspectRatio().toFloat()).execute();
-//        }
 
         if (willCallFaceTask) {
           faceDetectorTaskLock = true;
           FaceDetectorAsyncTaskDelegate delegate = (FaceDetectorAsyncTaskDelegate) cameraView;
           new FaceDetectorAsyncTask(delegate, mFaceDetector, image, width, height, correctRotation, getResources().getDisplayMetrics().density, mCamera2.getFacing(), getWidth(), getHeight(), mPaddingX, mPaddingY).execute();
         }
-
-//        if (willCallGoogleBarcodeTask) {
-//          googleBarcodeDetectorTaskLock = true;
-//          if (mGoogleVisionBarCodeMode == RNBarcodeDetector.NORMAL_MODE) {
-//            invertImageData = false;
-//          } else if (mGoogleVisionBarCodeMode == RNBarcodeDetector.ALTERNATE_MODE) {
-//            invertImageData = !invertImageData;
-//          } else if (mGoogleVisionBarCodeMode == RNBarcodeDetector.INVERTED_MODE) {
-//            invertImageData = true;
-//          }
-//          if (invertImageData) {
-//            for (int y = 0; y < data.length; y++) {
-//              data[y] = (byte) ~data[y];
-//            }
-//          }
-//          BarcodeDetectorAsyncTaskDelegate delegate = (BarcodeDetectorAsyncTaskDelegate) cameraView;
-//          new BarcodeDetectorAsyncTask(delegate, mGoogleBarcodeDetector, data, width, height,
-//                  correctRotation, getResources().getDisplayMetrics().density, mCamera2.getFacing(),
-//                  getWidth(), getHeight(), mPaddingX, mPaddingY).execute();
-//        }
-
-//        if (willCallTextTask) {
-//          textRecognizerTaskLock = true;
-//          TextRecognizerAsyncTaskDelegate delegate = (TextRecognizerAsyncTaskDelegate) cameraView;
-//          new TextRecognizerAsyncTask(delegate, mThemedReactContext, image, width, height, correctRotation, getResources().getDisplayMetrics().density, mCamera2.getFacing(), getWidth(), getHeight(), mPaddingX, mPaddingY).execute();
-//        }
       }
     });
   }
@@ -377,7 +329,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
   public void setBarCodeTypes(List<String> barCodeTypes) {
     mBarCodeTypes = barCodeTypes;
-    initBarcodeReader();
   }
 
   public void setDetectedImageInEvent(boolean detectedImageInEvent) {
@@ -406,62 +357,9 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     RNCameraViewHelper.emitPictureSavedEvent(this, response);
   }
 
-  /**
-   * Initialize the barcode decoder.
-   * Supports all iOS codes except [code138, code39mod43, itf14]
-   * Additionally supports [codabar, code128, maxicode, rss14, rssexpanded, upc_a, upc_ean]
-   */
-  private void initBarcodeReader() {
-    mMultiFormatReader = new MultiFormatReader();
-    EnumMap<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
-    EnumSet<BarcodeFormat> decodeFormats = EnumSet.noneOf(BarcodeFormat.class);
-
-    if (mBarCodeTypes != null) {
-      for (String code : mBarCodeTypes) {
-        String formatString = (String) CameraModule.VALID_BARCODE_TYPES.get(code);
-        if (formatString != null) {
-          decodeFormats.add(BarcodeFormat.valueOf(formatString));
-        }
-      }
-    }
-
-    hints.put(DecodeHintType.POSSIBLE_FORMATS, decodeFormats);
-    mMultiFormatReader.setHints(hints);
-  }
-
   public void setShouldScanBarCodes(boolean shouldScanBarCodes) {
-    if (shouldScanBarCodes && mMultiFormatReader == null) {
-      initBarcodeReader();
-    }
     this.mShouldScanBarCodes = shouldScanBarCodes;
     mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
-  }
-
-  public void onBarCodeRead(Result barCode, int width, int height, byte[] imageData) {
-//    String barCodeType = barCode.getBarcodeFormat().toString();
-//    if (!mShouldScanBarCodes) {
-//      return;
-//    }
-//    if (mBarCodeTypes != null && !mBarCodeTypes.contains(barCodeType)) {
-//      return;
-//    }
-//
-//    final byte[] compressedImage;
-//    if (mDetectedImageInEvent) {
-//      try {
-//        // https://stackoverflow.com/a/32793908/122441
-//        final YuvImage yuvImage = new YuvImage(imageData, ImageFormat.NV21, width, height, null);
-//        final ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
-//        yuvImage.compressToJpeg(new Rect(0, 0, width, height), 100, imageStream);
-//        compressedImage = imageStream.toByteArray();
-//      } catch (Exception e) {
-//        throw new RuntimeException(String.format("Error decoding imageData from NV21 format (%d bytes)", imageData.length), e);
-//      }
-//    } else {
-//      compressedImage = null;
-//    }
-//
-//    RNCameraViewHelper.emitBarCodeReadEvent(this, barCode, width, height);
   }
 
   public void onBarCodeScanningTaskCompleted() {
@@ -469,19 +367,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     if(mMultiFormatReader != null) {
       mMultiFormatReader.reset();
     }
-  }
-
-  // Limit Scan Area
-  public void setRectOfInterest(float x, float y, float width, float height) {
-    this.mLimitScanArea = true;
-    this.mScanAreaX = x;
-    this.mScanAreaY = y;
-    this.mScanAreaWidth = width;
-    this.mScanAreaHeight = height;
-  }
-  public void setCameraViewDimensions(int width, int height) {
-    this.mCameraViewWidth = width;
-    this.mCameraViewHeight = height;
   }
 
 
@@ -580,55 +465,10 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     faceDetectorTaskLock = false;
   }
 
-  /**
-   * Initial setup of the barcode detector
-   */
-  private void setupBarcodeDetector() {
-    mGoogleBarcodeDetector = new RNBarcodeDetector(mThemedReactContext);
-    mGoogleBarcodeDetector.setBarcodeType(mGoogleVisionBarCodeType);
-  }
 
   public void setShouldGoogleDetectBarcodes(boolean shouldDetectBarcodes) {
-    if (shouldDetectBarcodes && mGoogleBarcodeDetector == null) {
-      setupBarcodeDetector();
-    }
     this.mShouldGoogleDetectBarcodes = shouldDetectBarcodes;
     mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
-  }
-
-  public void setGoogleVisionBarcodeType(int barcodeType) {
-    mGoogleVisionBarCodeType = barcodeType;
-    if (mGoogleBarcodeDetector != null) {
-      mGoogleBarcodeDetector.setBarcodeType(barcodeType);
-    }
-  }
-
-  public void setGoogleVisionBarcodeMode(int barcodeMode) {
-    mGoogleVisionBarCodeMode = barcodeMode;
-  }
-
-  public void onBarcodesDetected(WritableArray barcodesDetected, int width, int height, byte[] imageData) {
-    if (!mShouldGoogleDetectBarcodes) {
-      return;
-    }
-
-    // See discussion in https://github.com/react-native-community/react-native-camera/issues/2786
-    final byte[] compressedImage;
-    if (mDetectedImageInEvent) {
-      try {
-        // https://stackoverflow.com/a/32793908/122441
-        final YuvImage yuvImage = new YuvImage(imageData, ImageFormat.NV21, width, height, null);
-        final ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
-        yuvImage.compressToJpeg(new Rect(0, 0, width, height), 100, imageStream);
-        compressedImage = imageStream.toByteArray();
-      } catch (Exception e) {
-        throw new RuntimeException(String.format("Error decoding imageData from NV21 format (%d bytes)", imageData.length), e);
-      }
-    } else {
-      compressedImage = null;
-    }
-
-    RNCameraViewHelper.emitBarcodesDetectedEvent(this, barcodesDetected, compressedImage);
   }
 
   public void onBarcodeDetectionError(RNBarcodeDetector barcodeDetector) {

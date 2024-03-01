@@ -915,7 +915,7 @@ class Camera2 {
                 mCaptureRequestBuilderForPreview.addTarget(mScanImageReader.getSurface());
             }
             mCamera.createCaptureSession(Arrays.asList(surface, mStillImageReader.getSurface(),
-                    mScanImageReader.getSurface()), mCameraCaptureSessionCallback, null);
+                    mScanImageReader.getSurface()), mCameraCaptureSessionCallback, null); //todo refactor deprecated createCaptureSession method
 //            List<OutputConfiguration> outputConfigurations = Arrays.asList(
 //                    new OutputConfiguration(surface),
 //                    new OutputConfiguration(mStillImageReader.getSurface()),
