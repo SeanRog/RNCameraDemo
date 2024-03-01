@@ -1,4 +1,4 @@
-package com.rncamerademo.nativemodules.camera;
+package com.rncamerademo.nativemodules.camera.utils;
 
 import androidx.exifinterface.media.ExifInterface;
 import android.view.ViewGroup;
@@ -11,7 +11,7 @@ import com.facebook.react.uimanager.UIManagerModule;
 
 import com.rncamerademo.nativemodules.camera.events.*;
 
-public class RNCameraViewHelper {
+public class HelperFunctions {
 
   public static final String[][] exifTags = new String[][]{
       {"string", ExifInterface.TAG_ARTIST},

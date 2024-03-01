@@ -18,6 +18,7 @@ import android.widget.FrameLayout;
 import com.facebook.react.bridge.*;
 
 import com.rncamerademo.nativemodules.camera.tasks.*;
+import com.rncamerademo.nativemodules.camera.utils.HelperFunctions;
 
 import java.io.File;
 import java.lang.annotation.Retention;
@@ -118,7 +119,7 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
           new ResolveTakenPictureAsyncTask(data, promise, options, cacheDirectory, deviceOrientation, softwareRotation, RNCameraView.this)
                   .execute();
         }
-        RNCameraViewHelper.emitPictureTakenEvent(cameraView);
+        HelperFunctions.emitPictureTakenEvent(cameraView);
       }
     });
   }
@@ -241,7 +242,7 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   }
 
   public void onPictureSaved(WritableMap response) {
-    RNCameraViewHelper.emitPictureSavedEvent(this, response);
+    HelperFunctions.emitPictureSavedEvent(this, response);
   }
 
   public void setFaceDetectionLandmarks(int landmarks) {

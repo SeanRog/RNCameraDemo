@@ -14,7 +14,7 @@ import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 
-import com.rncamerademo.nativemodules.camera.RNCameraViewHelper;
+import com.rncamerademo.nativemodules.camera.utils.HelperFunctions;
 import com.rncamerademo.nativemodules.camera.utils.RNFileUtils;
 
 import java.io.ByteArrayInputStream;
@@ -141,7 +141,7 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
                     if(exifInterface == null){
                         exifInterface = new ExifInterface(inputStream);
                     }
-                    exifData = RNCameraViewHelper.getExifData(exifInterface);
+                    exifData = HelperFunctions.getExifData(exifInterface);
 
                     if(exifExtraData != null){
                         exifData.merge(exifExtraData);
@@ -201,14 +201,14 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
                     // Since we didn't modify the image, we only update if we have extra exif info
                     if (writeExifToFile && exifExtraData != null) {
                         ExifInterface fileExifInterface = new ExifInterface(imageFile.getAbsolutePath());
-                        RNCameraViewHelper.setExifData(fileExifInterface, exifExtraData);
+                        HelperFunctions.setExifData(fileExifInterface, exifExtraData);
                         fileExifInterface.saveAttributes();
                     }
                     else if (!writeExifToFile){
                         // if we were requested to NOT store exif, we actually need to
                         // clear the exif tags
                         ExifInterface fileExifInterface = new ExifInterface(imageFile.getAbsolutePath());
-                        RNCameraViewHelper.clearExifData(fileExifInterface);
+                        HelperFunctions.clearExifData(fileExifInterface);
                         fileExifInterface.saveAttributes();
                     }
                     // else: exif is unmodified, no need to update anything
@@ -243,7 +243,7 @@ public class ResolveTakenPictureAsyncTask extends AsyncTask<Void, Void, Writable
                     // to add it if requested
                     if (writeExifToFile && exifData != null) {
                         ExifInterface fileExifInterface = new ExifInterface(filePath);
-                        RNCameraViewHelper.setExifData(fileExifInterface, exifData);
+                        HelperFunctions.setExifData(fileExifInterface, exifData);
                         fileExifInterface.saveAttributes();
                     }
                     File imageFile = new File(filePath);
