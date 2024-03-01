@@ -74,8 +74,7 @@ type CameraViewProps = ViewProps & {
   flashMode: number,
   autoFocus: boolean,
   zoom: number,
-  barCodeScannerEnabled: boolean,
-	googleVisionBarcodeDetectorEnabled: boolean,
+  barcodeReaderEnabled: boolean,
   faceDetectorEnabled: boolean,
   faceDetectionMode: number,
   faceDetectionLandmarks: number,
@@ -204,7 +203,7 @@ const Camera = (props: CameraViewProps) => {
 		let barcodeReadListener: EmitterSubscription;
 		let facesDetectedListener: EmitterSubscription;
 		let textDetectedListener: EmitterSubscription;
-		if (props.barCodeScannerEnabled) {
+		if (props.barcodeReaderEnabled) {
 			barcodeReadListener = DeviceEventEmitter.addListener('onBarCodeRead', props.onBarCodeRead);
 		}
 		if (props.faceDetectorEnabled) {
@@ -215,7 +214,7 @@ const Camera = (props: CameraViewProps) => {
 		}
 		
 		return () => {
-			if (props.barCodeScannerEnabled) {
+			if (props.barcodeReaderEnabled) {
 				barcodeReadListener.remove();
 			}
 			if (props.faceDetectorEnabled) {

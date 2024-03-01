@@ -107,6 +107,10 @@ class Camera2 {
     private TextRecognizerOptions textRecognizerOptions = new TextRecognizerOptions.Builder()
             .build();
     private TextRecognizer mTextRecognizer = TextRecognition.getClient(textRecognizerOptions);
+    private boolean mShouldRecognizeText = false;
+    private boolean mShouldReadBarcodes = false;
+    private boolean mShouldDetectFaces = false;
+
 
     static {
         INTERNAL_FACINGS.put(Constants.FACING_BACK, CameraCharacteristics.LENS_FACING_BACK);
@@ -226,9 +230,15 @@ class Camera2 {
                     mCallback.onPictureTaken(data, 0, 0);
                 }
             }
-            detectFaces(image);
-            detectBarcodes(image);
-            detectText(image);
+            if (mShouldDetectFaces) {
+                detectFaces(image);
+            }
+            if (mShouldReadBarcodes) {
+                detectBarcodes(image);
+            }
+            if (mShouldRecognizeText) {
+                detectText(image);
+            }
             image.close();
         }
 
@@ -255,9 +265,7 @@ class Camera2 {
         InputImage inputImage = InputImage.fromMediaImage(image, 90);
         Task<List<Barcode>> detectBarcodeTask = mBarcodeScanner.process(inputImage);
         detectBarcodeTask.addOnSuccessListener(barcodes -> {
-            Log.d(TAG, "barcodes.size():: " + barcodes.size());
             barcodes.forEach(barcode -> {
-                Rect boundingBox = barcode.getBoundingBox();
                 WritableMap barcodeEventData = Arguments.createMap();
                 barcodeEventData.putString("rawValue", barcode.getRawValue());
                 barcodeEventData.putInt("format", barcode.getFormat());
@@ -286,8 +294,6 @@ class Camera2 {
     private CameraCharacteristics mCameraCharacteristics;
 
     CameraDevice mCamera;
-
-    MediaActionSound sound = new MediaActionSound();
 
     CameraCaptureSession mCameraCaptureSession;
 
@@ -634,11 +640,15 @@ class Camera2 {
         }
     }
 
-    void setScanning(boolean isScanning) {
-        if (mIsScanning == isScanning) {
+    void setScanning(boolean shouldRecognizeText, boolean shouldReadBarcodes, boolean shouldDetectFaces) {
+        mShouldRecognizeText = shouldRecognizeText;
+        mShouldReadBarcodes = shouldReadBarcodes;
+        mShouldDetectFaces = shouldDetectFaces;
+        boolean shouldScan = shouldRecognizeText || shouldReadBarcodes || shouldDetectFaces;
+        if (mIsScanning == shouldScan) {
             return;
         }
-        mIsScanning = isScanning;
+        mIsScanning = shouldScan;
         if (!mIsScanning) {
             mImageFormat = ImageFormat.JPEG;
         } else {

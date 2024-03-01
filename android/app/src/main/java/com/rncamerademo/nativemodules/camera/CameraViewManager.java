@@ -155,5 +155,14 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
   public void setTextRecognizing(RNCameraView view, boolean textRecognizerEnabled) {
     view.setShouldRecognizeText(textRecognizerEnabled);
   }
-  /**---limit scan area addition---**/
+
+  @ReactProp(name = "barcodeReaderEnabled")
+  public void setShouldReadBarcodes(RNCameraView view, boolean barcodeReaderEnabled) {
+    view.setShouldReadBarcodes(barcodeReaderEnabled);
+  }
+
+  @ReactProp(name = "faceDetectorEnabled")
+  public void setShouldDetectFaces(RNCameraView view, boolean faceDetectorEnabled) {
+    view.setShouldDetectFaces(faceDetectorEnabled);
+  }
 }

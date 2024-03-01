@@ -82,15 +82,9 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   private boolean mIsNew = true;
 
   // Scanning-related properties
-  private RNFaceDetector mFaceDetector;
-  private boolean mShouldDetectFaces = false;
-  private boolean mShouldGoogleDetectBarcodes = false;
-  private boolean mShouldScanBarCodes = false;
   private boolean mShouldRecognizeText = false;
-  private int mFaceDetectorMode = RNFaceDetector.FAST_MODE;
-  private int mFaceDetectionLandmarks = RNFaceDetector.NO_LANDMARKS;
-  private int mFaceDetectionClassifications = RNFaceDetector.NO_CLASSIFICATIONS;
-  private boolean mTrackingEnabled = true;
+  private boolean mShouldReadBarcodes = false;
+  private boolean mShouldDetectFaces = false;
 
   private static RNCameraView rnCameraView;
 
@@ -251,31 +245,35 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   }
 
   public void setFaceDetectionLandmarks(int landmarks) {
-    mFaceDetectionLandmarks = landmarks;
-    if (mFaceDetector != null) {
-      mFaceDetector.setLandmarkType(landmarks);
-    }
+    // todo move logic to camera2
+//    mFaceDetectionLandmarks = landmarks;
+//    if (mFaceDetector != null) {
+//      mFaceDetector.setLandmarkType(landmarks);
+//    }
   }
 
   public void setFaceDetectionClassifications(int classifications) {
-    mFaceDetectionClassifications = classifications;
-    if (mFaceDetector != null) {
-      mFaceDetector.setClassificationType(classifications);
-    }
+    // todo move logic to camera2
+//    mFaceDetectionClassifications = classifications;
+//    if (mFaceDetector != null) {
+//      mFaceDetector.setClassificationType(classifications);
+//    }
   }
 
   public void setFaceDetectionMode(int mode) {
-    mFaceDetectorMode = mode;
-    if (mFaceDetector != null) {
-      mFaceDetector.setMode(mode);
-    }
+    // todo move logic to camera2
+//    mFaceDetectorMode = mode;
+//    if (mFaceDetector != null) {
+//      mFaceDetector.setMode(mode);
+//    }
   }
 
   public void setTracking(boolean trackingEnabled) {
-    mTrackingEnabled = trackingEnabled;
-    if (mFaceDetector != null) {
-      mFaceDetector.setTracking(trackingEnabled);
-    }
+    // todo move logic to camera2
+//    mTrackingEnabled = trackingEnabled;
+//    if (mFaceDetector != null) {
+//      mFaceDetector.setTracking(trackingEnabled);
+//    }
   }
 
   /**
@@ -285,7 +283,15 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
   public void setShouldRecognizeText(boolean shouldRecognizeText) {
     this.mShouldRecognizeText = shouldRecognizeText;
-    mCamera2.setScanning(mShouldDetectFaces || mShouldGoogleDetectBarcodes || mShouldScanBarCodes || mShouldRecognizeText);
+    mCamera2.setScanning(mShouldRecognizeText, mShouldReadBarcodes, mShouldDetectFaces);
+  }
+  public void setShouldReadBarcodes(boolean shouldReadBarcodes) {
+    this.mShouldReadBarcodes = shouldReadBarcodes;
+    mCamera2.setScanning(mShouldRecognizeText, mShouldReadBarcodes, mShouldDetectFaces);
+  }
+  public void setShouldDetectFaces(boolean shouldDetectFaces) {
+    this.mShouldDetectFaces = shouldDetectFaces;
+    mCamera2.setScanning(mShouldRecognizeText, mShouldReadBarcodes, mShouldDetectFaces);
   }
 
   /**
@@ -314,9 +320,12 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   }
 
   public void onHostDestroy() {
-    if (mFaceDetector != null) {
-      mFaceDetector.release();
-    }
+
+    // todo move logic to camera2
+//    if (mFaceDetector != null) {
+//      mFaceDetector.release();
+//    }
+
     mThemedReactContext.removeLifecycleEventListener(this);
 
     // camera release can be quite expensive. Run in on bg handler
