@@ -358,14 +358,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     }
   }
 
-  public void pausePreview() {
-    mCamera2.pausePreview();
-  }
-
-  public void resumePreview() {
-    mCamera2.resumePreview();
-  }
-
   public Set<AspectRatio> getSupportedAspectRatios() {
     return mCamera2.getSupportedAspectRatios();
   }
@@ -393,33 +385,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
       mBgThread = null;
     }
     rnCameraView = null;
-  }
-
-  private void onZoom(float scale){
-    float currentZoom=mCamera2.getZoom();
-    float nextZoom=currentZoom+(scale-1.0f);
-
-    if(nextZoom > currentZoom){
-      mCamera2.setZoom(Math.min(nextZoom,1.0f));
-    }else{
-      mCamera2.setZoom(Math.max(nextZoom,0.0f));
-    }
-
-  }
-
-  private boolean hasCameraPermissions() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      int result = ContextCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA);
-      return result == PackageManager.PERMISSION_GRANTED;
-    } else {
-      return true;
-    }
-  }
-  private int scalePosition(float raw){
-    Resources resources = getResources();
-    Configuration config = resources.getConfiguration();
-    DisplayMetrics dm = resources.getDisplayMetrics();
-    return (int)(raw/ dm.density);
   }
 
   private class CallbackBridge implements RNCamCallback {

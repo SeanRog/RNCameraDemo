@@ -912,18 +912,6 @@ class Camera2 {
         }
     }
 
-    public void resumePreview() {
-        unlockFocus();
-    }
-
-    public void pausePreview() {
-        try {
-            mCameraCaptureSession.stopRepeating();
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
     public Surface getPreviewSurface() {
         if (mPreviewSurface != null) {
             return mPreviewSurface;

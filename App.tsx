@@ -35,7 +35,7 @@ export default function App() {
 				onTextRecognized={(event) => {
 					console.log('onTextRecognized event from app.tsx:: ', event);
 				}} />
-				{/* <Image style={{width: 400, height: 400}} src='file:///data/user/0/com.rncamerademo/cache/Camera/4692b340-8098-4699-bc7a-150fd0896745.jpg'></Image> */}
+				{/* <Image style={{width: 400, height: 400}} src='file:///data/user/0/com.rncamerademo/cache/Camera/4386aa27-e557-4d58-be0c-ddeeaf518b90.jpg'></Image> */}
 
 				{/* <TouchableOpacity
 					onPress={() => console.log('take picture pressed')}
