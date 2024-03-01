@@ -1,45 +1,24 @@
 package com.rncamerademo.nativemodules.camera;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
-import android.graphics.Rect;
-import android.graphics.YuvImage;
 import android.media.Image;
-import android.media.ImageReader;
 import android.os.Build;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.util.DisplayMetrics;
-import android.util.Log;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.os.AsyncTask;
 import android.widget.FrameLayout;
 
 import com.facebook.react.bridge.*;
-import com.facebook.react.uimanager.ThemedReactContext;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.MultiFormatReader;
-import com.google.zxing.Result;
 
 import com.rncamerademo.nativemodules.camera.tasks.*;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -47,8 +26,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+/**
+ * Singleton that manages the Camera2 instance
+ */
 public class RNCameraView extends FrameLayout implements LifecycleEventListener, PictureSavedDelegate {
-  private static final String TAG = "rncameranativemodule";
 
   /** The camera device faces the opposite direction as the device's screen. */
   public static final int FACING_BACK = Constants.FACING_BACK;
@@ -99,8 +80,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
   private boolean mIsPaused = false;
   private boolean mIsNew = true;
-  private boolean mUseNativeZoom=false;
-  public volatile boolean textRecognizerTaskLock = false;
 
   // Scanning-related properties
   private RNFaceDetector mFaceDetector;
@@ -108,7 +87,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   private boolean mShouldGoogleDetectBarcodes = false;
   private boolean mShouldScanBarCodes = false;
   private boolean mShouldRecognizeText = false;
-  private boolean mShouldDetectTouches = false;
   private int mFaceDetectorMode = RNFaceDetector.FAST_MODE;
   private int mFaceDetectionLandmarks = RNFaceDetector.NO_LANDMARKS;
   private int mFaceDetectionClassifications = RNFaceDetector.NO_CLASSIFICATIONS;
@@ -156,14 +134,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
       rnCameraView = new RNCameraView(themedReactContext);
     }
     return rnCameraView;
-  }
-
-  public SortedSet<Size> getAvailablePictureSizes(@NonNull AspectRatio ratio) {
-    return mCamera2.getAvailablePictureSizes(ratio);
-  }
-
-  public List<Properties> getCameraIds() {
-    return mCamera2.getCameraIds();
   }
 
   public void addCallback(@NonNull Callback callback) {
@@ -229,10 +199,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     mCamera2.setFlash(flash);
   }
 
-  public ArrayList<int[]> getSupportedPreviewFpsRange() {
-    return mCamera2.getSupportedPreviewFpsRange();
-  }
-
   public void setAutoFocus(boolean autoFocus) {
     mCamera2.setAutoFocus(autoFocus);
   }
@@ -282,17 +248,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
   public void onPictureSaved(WritableMap response) {
     RNCameraViewHelper.emitPictureSavedEvent(this, response);
-  }
-
-  /**
-   * Initial setup of the face detector
-   */
-  private void setupFaceDetector() {
-    mFaceDetector = new RNFaceDetector(mThemedReactContext);
-    mFaceDetector.setMode(mFaceDetectorMode);
-    mFaceDetector.setLandmarkType(mFaceDetectionLandmarks);
-    mFaceDetector.setClassificationType(mFaceDetectionClassifications);
-    mFaceDetector.setTracking(mTrackingEnabled);
   }
 
   public void setFaceDetectionLandmarks(int landmarks) {
@@ -358,10 +313,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     }
   }
 
-  public Set<AspectRatio> getSupportedAspectRatios() {
-    return mCamera2.getSupportedAspectRatios();
-  }
-
   public void onHostDestroy() {
     if (mFaceDetector != null) {
       mFaceDetector.release();
@@ -370,13 +321,10 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
 
     // camera release can be quite expensive. Run in on bg handler
     // and cleanup last once everything has finished
-    mBgHandler.post(new Runnable() {
-        @Override
-        public void run() {
-          mCamera2.stop();
-          cleanup();
-        }
-      });
+    mBgHandler.post(() -> {
+      mCamera2.stop();
+      cleanup();
+    });
   }
 
   public void cleanup(){

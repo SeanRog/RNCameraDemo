@@ -554,10 +554,6 @@ class Camera2 {
         }
     }
 
-    boolean getAutoFocus() {
-        return mAutoFocus;
-    }
-
     void setFlash(int flash) {
         if (mFlash == flash) {
             return;
@@ -576,11 +572,6 @@ class Camera2 {
             }
         }
     }
-
-    int getFlash() {
-        return mFlash;
-    }
-
 
     void takePicture(ReadableMap options) {
         mPictureCaptureCallback.setOptions(options);
@@ -609,10 +600,6 @@ class Camera2 {
         }
     }
 
-    float getFocusDepth() {
-        return mFocusDepth;
-    }
-
     public void setZoom(float zoom) {
       if (mZoom == zoom) {
           return;
@@ -628,10 +615,6 @@ class Camera2 {
               mZoom = saved;  // Revert
           }
       }
-    }
-
-    float getZoom() {
-        return mZoom;
     }
 
     public void setWhiteBalance(int whiteBalance) {
@@ -651,10 +634,6 @@ class Camera2 {
         }
     }
 
-    public int getWhiteBalance() {
-        return mWhiteBalance;
-    }
-
     void setScanning(boolean isScanning) {
         if (mIsScanning == isScanning) {
             return;
@@ -670,53 +649,6 @@ class Camera2 {
             mCameraCaptureSession = null;
         }
         startCaptureSession();
-    }
-
-    boolean getScanning() {
-        return mIsScanning;
-    }
-
-    int getCameraOrientation() {
-        return mCameraOrientation;
-    }
-
-    void setDisplayOrientation(int displayOrientation) {
-        mDisplayOrientation = displayOrientation;
-        mPreview.setDisplayOrientation(mDisplayOrientation);
-    }
-
-
-    void setDeviceOrientation(int deviceOrientation) {
-        mDeviceOrientation = deviceOrientation;
-        //mPreview.setDisplayOrientation(deviceOrientation); // this is not needed and messes up the display orientation
-    }
-
-
-    // This is a helper method to query Camera2 legacy status so we don't need
-    // to instantiate and set all its props in order to check if it is legacy or not
-    // and then fallback to Camera1. This way, legacy devices can fall back to Camera1 right away
-    // This method makes sure all cameras are not legacy, so further checks are not needed.
-    //TODO remove redundant
-    public static boolean isLegacy(Context context){
-        try{
-            CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
-            String[] ids = manager.getCameraIdList();
-            for (String id : ids) {
-                CameraCharacteristics characteristics = manager.getCameraCharacteristics(id);
-                Integer level = characteristics.get(
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
-                if (level == null ||
-                        level == CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) {
-                    Log.w(TAG, "Camera2 can only run in legacy mode and should not be used.");
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch(CameraAccessException ex){
-            Log.e(TAG, "Failed to check camera legacy status, returning true.", ex);
-            return true;
-        }
     }
 
     /**
@@ -917,32 +849,6 @@ class Camera2 {
             return mPreviewSurface;
         }
         return mPreview.getSurface();
-    }
-
-    public void setPreviewTexture(SurfaceTexture surfaceTexture) {
-        if (surfaceTexture != null) {
-            Surface previewSurface = new Surface(surfaceTexture);
-            mPreviewSurface = previewSurface;
-        } else {
-            mPreviewSurface = null;
-        }
-
-        // it may be called from another thread, so make sure we're in main looper
-        Handler handler = new Handler(Looper.getMainLooper());
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (mCameraCaptureSession != null) {
-                    mCameraCaptureSession.close();
-                    mCameraCaptureSession = null;
-                }
-                startCaptureSession();
-            }
-        });
-    }
-
-    public Size getPreviewSize() {
-        return new Size(mPreview.getWidth(), mPreview.getHeight());
     }
 
     /**
