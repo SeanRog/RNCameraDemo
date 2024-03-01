@@ -9,7 +9,5 @@ public interface RNCamCallback {
 
     void onPictureTaken(byte[] data, int deviceOrientation, int softwareRotation);
 
-    void onFramePreview(Image image, int width, int height, int orientation);
-
     void onMountError();
 }

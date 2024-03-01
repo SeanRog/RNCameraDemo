@@ -1,12 +1,5 @@
 package com.rncamerademo.nativemodules.camera;
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.media.CamcorderProfile;
-import android.os.Build;
 import androidx.exifinterface.media.ExifInterface;
 import android.view.ViewGroup;
 
@@ -14,16 +7,9 @@ import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.uimanager.UIManagerModule;
 
-import com.google.mlkit.vision.barcode.Barcode;
-import com.google.zxing.Result;
-
 import com.rncamerademo.nativemodules.camera.events.*;
-
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 
 public class RNCameraViewHelper {
 
@@ -167,12 +153,9 @@ public class RNCameraViewHelper {
   public static void emitPictureSavedEvent(final ViewGroup view, final WritableMap response) {
 
     final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        PictureSavedEvent event = PictureSavedEvent.obtain(view.getId(), response);
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
+    reactContext.runOnNativeModulesQueueThread(() -> {
+      PictureSavedEvent event = PictureSavedEvent.obtain(view.getId(), response);
+      reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
     });
 
   }
@@ -182,13 +165,10 @@ public class RNCameraViewHelper {
   public static void emitPictureTakenEvent(final ViewGroup view) {
 
     final ReactContext reactContext = (ReactContext) view.getContext();
-    reactContext.runOnNativeModulesQueueThread(new Runnable() {
-      @Override
-      public void run() {
-        PictureTakenEvent event = PictureTakenEvent.obtain(view.getId());
-        reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
-      }
-     });
+    reactContext.runOnNativeModulesQueueThread(() -> {
+      PictureTakenEvent event = PictureTakenEvent.obtain(view.getId());
+      reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher().dispatchEvent(event);
+    });
   }
 
   // Utilities

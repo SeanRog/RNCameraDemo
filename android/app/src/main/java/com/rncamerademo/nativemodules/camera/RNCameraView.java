@@ -383,13 +383,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     }
 
     @Override
-    public void onFramePreview(Image image, int width, int height, int orientation) {
-      for (Callback callback : mCallbacks) {
-        callback.onFramePreview(RNCameraView.this, image, width, height, orientation);
-      }
-    }
-
-    @Override
     public void onMountError() {
       for (Callback callback : mCallbacks) {
         callback.onMountError(RNCameraView.this);

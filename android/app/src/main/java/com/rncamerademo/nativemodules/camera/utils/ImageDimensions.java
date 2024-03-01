@@ -6,14 +6,6 @@ public class ImageDimensions {
   private int mFacing;
   private int mRotation;
 
-  public ImageDimensions(int width, int height) {
-    this(width, height, 0);
-  }
-
-  public ImageDimensions(int width, int height, int rotation) {
-    this(width, height, rotation, -1);
-  }
-
   public ImageDimensions(int width, int height, int rotation, int facing) {
     mWidth = width;
     mHeight = height;

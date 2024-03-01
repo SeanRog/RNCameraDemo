@@ -1,6 +1,5 @@
 package com.rncamerademo.nativemodules.camera.utils;
 
-import android.content.Context;
 import android.net.Uri;
 
 import java.io.File;
