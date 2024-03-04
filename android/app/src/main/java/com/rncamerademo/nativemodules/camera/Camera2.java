@@ -20,7 +20,6 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
-import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -35,25 +34,18 @@ import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.media.MediaActionSound;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.os.Handler;
-import android.os.Looper;
 import android.view.View;
 
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.Dynamic;
 import com.facebook.react.bridge.ReactContext;
-import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 
-import com.facebook.react.bridge.ReadableMapKeySetIterator;
-import com.facebook.react.bridge.ReadableType;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.android.gms.tasks.Task;
@@ -75,11 +67,8 @@ import com.rncamerademo.nativemodules.camera.utils.ObjectUtils;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
@@ -181,7 +170,6 @@ class Camera2 {
                 mCameraCaptureSession = null;
             }
         }
-
     };
 
     PictureCaptureCallback mPictureCaptureCallback = new PictureCaptureCallback() {
