@@ -127,10 +127,6 @@ class Camera2 {
      */
     private static final int MAX_PREVIEW_HEIGHT = 1080;
 
-    private static final int FOCUS_AREA_SIZE_DEFAULT = 300;
-
-    private static final int FOCUS_METERING_AREA_WEIGHT_DEFAULT = 1000;
-
     private final CameraManager mCameraManager;
 
     private final CameraDevice.StateCallback mCameraDeviceCallback
@@ -138,12 +134,7 @@ class Camera2 {
 
         public void onOpened(@NonNull CameraDevice camera) {
             mCamera = camera;
-            mCallback.onCameraOpened();
             startCaptureSession();
-        }
-
-        public void onClosed(@NonNull CameraDevice camera) {
-            mCallback.onCameraClosed();
         }
 
         public void onDisconnected(@NonNull CameraDevice camera) {
@@ -379,7 +370,6 @@ class Camera2 {
     boolean start() {
         if (!chooseCameraIdByFacing()) {
             mAspectRatio = mInitialRatio;
-            mCallback.onMountError();
             return false;
         }
         collectCameraInfo();
@@ -850,7 +840,6 @@ class Camera2 {
 //                            mSessionCallback));
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to start capture session", e);
-            mCallback.onMountError();
         }
     }
 

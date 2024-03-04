@@ -1,9 +1,7 @@
 package com.rncamerademo.nativemodules.camera;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
-import android.media.Image;
 import android.os.Build;
 
 import androidx.annotation.IntDef;
@@ -218,11 +216,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     mCamera2.setPictureSize(size);
   }
 
-  @SuppressLint("all")
-  public void requestLayout() {
-    // React handles this for us, so we don't need to call super.requestLayout();
-  }
-
   public void takePicture(final ReadableMap options, final Promise promise, final File cacheDirectory) {
     mBgHandler.post(() -> {
       mPictureTakenPromises.add(promise);
@@ -359,34 +352,9 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
     }
 
     @Override
-    public void onCameraOpened() {
-      if (mRequestLayoutOnOpen) {
-        mRequestLayoutOnOpen = false;
-        requestLayout();
-      }
-      for (Callback callback : mCallbacks) {
-        callback.onCameraOpened(RNCameraView.this);
-      }
-    }
-
-    @Override
-    public void onCameraClosed() {
-      for (Callback callback : mCallbacks) {
-        callback.onCameraClosed(RNCameraView.this);
-      }
-    }
-
-    @Override
     public void onPictureTaken(byte[] data, int deviceOrientation, int softwareRotation) {
       for (Callback callback : mCallbacks) {
         callback.onPictureTaken(RNCameraView.this, data, deviceOrientation, softwareRotation);
-      }
-    }
-
-    @Override
-    public void onMountError() {
-      for (Callback callback : mCallbacks) {
-        callback.onMountError(RNCameraView.this);
       }
     }
   }
@@ -402,30 +370,12 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
   public abstract static class Callback {
 
     /**
-     * Called when camera is opened.
-     *
-     * @param cameraView The associated {@link RNCameraView}.
-     */
-    public void onCameraOpened(RNCameraView cameraView) {}
-
-    /**
-     * Called when camera is closed.
-     *
-     * @param cameraView The associated {@link RNCameraView}.
-     */
-    public void onCameraClosed(RNCameraView cameraView) {}
-
-    /**
      * Called when a picture is taken.
      *
      * @param cameraView The associated {@link RNCameraView}.
      * @param data       JPEG data.
      */
     public void onPictureTaken(RNCameraView cameraView, byte[] data, int deviceOrientation, int softwareRotation) {}
-
-    public void onFramePreview(RNCameraView cameraView, Image image, int width, int height, int orientation) {}
-
-    public void onMountError(RNCameraView cameraView) {}
   }
 
 }
