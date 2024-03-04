@@ -2,47 +2,15 @@ package com.rncamerademo.nativemodules.camera;
 
 import android.util.Log;
 
-import androidx.annotation.Nullable;
-
-import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.common.MapBuilder;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.ViewGroupManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class CameraViewManager extends ViewGroupManager<RNCameraView> {
   private String TAG = "rncamerademo";
-  public enum Events {
-    EVENT_CAMERA_READY("onCameraReady"),
-    EVENT_ON_BAR_CODE_READ("onBarCodeRead"),
-    EVENT_ON_FACES_DETECTED("onFacesDetected"),
-    EVENT_ON_BARCODES_DETECTED("onGoogleVisionBarcodesDetected"),
-    EVENT_ON_FACE_DETECTION_ERROR("onFaceDetectionError"),
-    EVENT_ON_BARCODE_DETECTION_ERROR("onGoogleVisionBarcodeDetectionError"),
-    EVENT_ON_TEXT_RECOGNIZED("onTextRecognized"),
-    EVENT_ON_PICTURE_TAKEN("onPictureTaken"),
-    EVENT_ON_PICTURE_SAVED("onPictureSaved"),
-    EVENT_ON_RECORDING_START("onRecordingStart"),
-    EVENT_ON_RECORDING_END("onRecordingEnd"),
-    EVENT_ON_TOUCH("onTouch");
-
-
-    private final String mName;
-
-    Events(final String name) {
-      mName = name;
-    }
-
-    @Override
-    public String toString() {
-      return mName;
-    }
-  }
 
   private static final String REACT_CLASS = "RNCamera";
 
@@ -65,16 +33,6 @@ public class CameraViewManager extends ViewGroupManager<RNCameraView> {
     RNCameraView instance =  RNCameraView.getInstance(themedReactContext);
     Log.d(TAG, "end create view instance");
     return instance;
-  }
-
-  @Override
-  @Nullable
-  public Map<String, Object> getExportedCustomDirectEventTypeConstants() {
-    MapBuilder.Builder<String, Object> builder = MapBuilder.builder();
-    for (Events event : Events.values()) {
-      builder.put(event.toString(), MapBuilder.of("registrationName", event.toString()));
-    }
-    return builder.build();
   }
 
   @ReactProp(name = "type")

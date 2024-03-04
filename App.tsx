@@ -6,7 +6,7 @@ export default function App() {
 	
   return (
     <View ref={undefined} style={{width: '100%', height: '100%', backgroundColor: 'purple'}}>
-			<Button title='click me' onPress={async () => console.log(await takePictureAsync())}></Button>
+			<Button title='click me' onPress={async () => console.log(await takePictureAsync({base64: true}))}></Button>
       <Camera
 				style={{ height: '100%', width: '100%' }}
 				type={0}

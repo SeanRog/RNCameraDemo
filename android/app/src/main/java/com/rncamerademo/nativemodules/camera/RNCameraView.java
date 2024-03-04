@@ -2,21 +2,17 @@ package com.rncamerademo.nativemodules.camera;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.os.Build;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Log;
 import android.view.View;
-import android.os.AsyncTask;
 import android.widget.FrameLayout;
 
 import com.facebook.react.bridge.*;
-
-import com.rncamerademo.nativemodules.camera.tasks.*;
-import com.rncamerademo.nativemodules.camera.utils.HelperFunctions;
 
 import java.io.File;
 import java.lang.annotation.Retention;
@@ -24,11 +20,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import com.rncamerademo.nativemodules.camera.utils.HelperFunctions;
 
 /**
  * Singleton that manages the Camera2 instance
  */
-public class RNCameraView extends FrameLayout implements LifecycleEventListener, PictureSavedDelegate {
+public class RNCameraView extends FrameLayout implements LifecycleEventListener {
 
   /** The camera device faces the opposite direction as the device's screen. */
   public static final int FACING_BACK = Constants.FACING_BACK;
@@ -110,14 +107,16 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
             promise.resolve(null);
         }
         final File cacheDirectory = mPictureTakenDirectories.remove(promise);
-        if(Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
-          new ResolveTakenPictureAsyncTask(data, promise, options, cacheDirectory, deviceOrientation, softwareRotation, RNCameraView.this)
-                  .executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        } else {
-          new ResolveTakenPictureAsyncTask(data, promise, options, cacheDirectory, deviceOrientation, softwareRotation, RNCameraView.this)
-                  .execute();
+        WritableMap result = HelperFunctions.takePictureHelper(data, promise, options, cacheDirectory, deviceOrientation, softwareRotation);
+        Log.d("RNCameraView", "deviceOrientation:: " + result.getInt("deviceOrientation"));
+        Log.d("RNCameraView", "pictureOrientation:: " + result.getInt("pictureOrientation"));
+        Log.d("RNCameraView", "uri:: " + result.getString("uri"));
+        Log.d("RNCameraView", "base64:: " + result.getString("base64"));
+        Log.d("RNCameraView", "width:: " + result.getInt("width"));
+        Log.d("RNCameraView", "height:: " + result.getInt("height"));
+        if (result != null) {
+          promise.resolve(result);
         }
-        HelperFunctions.emitPictureTakenEvent(cameraView);
       }
     });
   }
@@ -232,10 +231,6 @@ public class RNCameraView extends FrameLayout implements LifecycleEventListener,
         promise.reject("E_TAKE_PICTURE_FAILED", e.getMessage());
       }
     });
-  }
-
-  public void onPictureSaved(WritableMap response) {
-    HelperFunctions.emitPictureSavedEvent(this, response);
   }
 
   public void setFaceDetectionLandmarks(int landmarks) {
