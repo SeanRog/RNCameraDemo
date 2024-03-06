@@ -124,6 +124,8 @@ type barcodeEventData = {
 };
 
 type faceDetectionEventData = {
+	top: number,
+	left: number,
 	centerX: number,
 	centerY: number,
 	width: number,

@@ -234,6 +234,8 @@ class Camera2 {
                 faceDetectionEventData.putInt("height", rect.height());
                 faceDetectionEventData.putInt("centerX", rect.centerX());
                 faceDetectionEventData.putInt("centerY", rect.centerY());
+                faceDetectionEventData.putInt("top", rect.top);
+                faceDetectionEventData.putInt("left", rect.left);
                 mReactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                         .emit("onFacesDetected", faceDetectionEventData);
             });
