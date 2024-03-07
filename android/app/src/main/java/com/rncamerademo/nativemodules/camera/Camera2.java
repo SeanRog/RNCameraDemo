@@ -49,7 +49,7 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.android.gms.tasks.Task;
-import com.google.mlkit.vision.barcode.Barcode;
+import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.barcode.BarcodeScanner;
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
 import com.google.mlkit.vision.barcode.BarcodeScanning;
@@ -61,7 +61,8 @@ import com.google.mlkit.vision.face.FaceDetectorOptions;
 import com.google.mlkit.vision.text.Text;
 import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
-import com.google.mlkit.vision.text.TextRecognizerOptions;
+import com.google.mlkit.vision.text.TextRecognizerOptionsInterface;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
 import com.rncamerademo.nativemodules.camera.utils.ObjectUtils;
 
 import java.nio.ByteBuffer;
@@ -93,7 +94,7 @@ class Camera2 {
     private BarcodeScannerOptions barcodeScannerOptions = new BarcodeScannerOptions.Builder()
             .build();
     private BarcodeScanner mBarcodeScanner = BarcodeScanning.getClient(barcodeScannerOptions);
-    private TextRecognizerOptions textRecognizerOptions = new TextRecognizerOptions.Builder()
+    private TextRecognizerOptionsInterface textRecognizerOptions = new TextRecognizerOptions.Builder()
             .build();
     private TextRecognizer mTextRecognizer = TextRecognition.getClient(textRecognizerOptions);
     private boolean mShouldRecognizeText = false;
